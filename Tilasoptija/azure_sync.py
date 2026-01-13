@@ -428,8 +428,68 @@ def run_full_sync():
     print(f"\nFull sync complete! {rows} records inserted.")
 
 
+def get_max_date_in_azure():
+    """Get the most recent competition date from Azure SQL."""
+    try:
+        conn = get_azure_connection()
+        cursor = conn.cursor()
+        cursor.execute(f"SELECT MAX(Start_Date) FROM {TABLE_NAME}")
+        result = cursor.fetchone()[0]
+        conn.close()
+        return result
+    except Exception as e:
+        print(f"Error getting max date: {e}")
+        return None
+
+
+def filter_new_records(df):
+    """
+    Filter DataFrame to only include records not already in Azure.
+    Uses Competition_ID + Athlete_ID + Event as unique key.
+    """
+    if df.empty:
+        return df
+
+    print("Checking for existing records in Azure...")
+
+    try:
+        conn = get_azure_connection()
+        cursor = conn.cursor()
+
+        # Get existing keys from Azure (Competition_ID, Athlete_ID, Event combinations)
+        cursor.execute(f"""
+            SELECT DISTINCT Competition_ID, Athlete_ID, Event
+            FROM {TABLE_NAME}
+            WHERE Competition_ID IS NOT NULL
+        """)
+        existing = set()
+        for row in cursor.fetchall():
+            key = (str(row[0]), str(row[1]), str(row[2]))
+            existing.add(key)
+
+        conn.close()
+        print(f"Found {len(existing):,} existing record keys in Azure")
+
+        # Filter to only new records
+        def is_new(row):
+            key = (str(row.get('Competition_ID', '')),
+                   str(row.get('Athlete_ID', '')),
+                   str(row.get('Event', '')))
+            return key not in existing
+
+        original_count = len(df)
+        df = df[df.apply(is_new, axis=1)]
+        print(f"Filtered to {len(df)} new records (skipped {original_count - len(df)} duplicates)")
+
+        return df
+
+    except Exception as e:
+        print(f"Warning: Could not filter duplicates: {e}")
+        return df
+
+
 def run_incremental_sync():
-    """Run incremental sync - only new/changed records since last sync."""
+    """Run incremental sync - only new records not already in Azure."""
     print("=" * 60)
     print("INCREMENTAL SYNC")
     print("=" * 60)
@@ -446,24 +506,35 @@ def run_incremental_sync():
         run_full_sync()
         return
 
-    # Get last sync date
-    last_sync = get_last_sync_date()
-    if last_sync:
-        print(f"Last sync: {last_sync}")
+    # Get last sync date from Azure itself
+    max_date = get_max_date_in_azure()
+    if max_date:
+        print(f"Most recent data in Azure: {max_date}")
+        # Fetch data from 7 days before max date to catch any late entries
+        since_date = (max_date - timedelta(days=7)).isoformat() if hasattr(max_date, 'isoformat') else None
     else:
-        # Default to last week if no log
-        last_sync = (datetime.now() - timedelta(days=7)).isoformat()
-        print(f"No sync log found. Fetching records since {last_sync}")
+        since_date = None
+        print("No existing data in Azure")
 
-    # Fetch new records
-    df = fetch_new_records(since_date=last_sync)
+    # Fetch records from API
+    df = fetch_new_records(since_date=since_date)
     if df.empty:
-        print("No new records to sync.")
+        print("No records from API.")
         update_sync_log(0)
         return
 
-    # Process and insert
+    # Process records
     df = process_records(df)
+
+    # Filter to only new records (not already in Azure)
+    df = filter_new_records(df)
+
+    if df.empty:
+        print("No new records to sync (all already exist).")
+        update_sync_log(0)
+        return
+
+    # Insert only new records
     rows = sync_to_azure(df)
 
     update_sync_log(rows)
