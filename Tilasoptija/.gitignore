@@ -1,0 +1,47 @@
+# Environment and secrets
+.env
+.streamlit/secrets.toml
+
+# Large data files (keep filtered DBs, exclude full CSV)
+Tilastoptja_Data/ksaoutput_full.csv
+Tilastoptja_Data/ksaoutput20y.csv
+Tilastoptja_Data/ksaoutput_full_new.csv
+Tilastoptja_Data/*.tmp
+Tilastoptja_Data/backups/
+
+# Old/backup databases
+SQL/athletics.db
+SQL/athleticsold.db
+SQL/saudi_athletes.db
+
+# Large database - exceeds GitHub 100MB limit
+# Will be built on first run or use Git LFS
+SQL/athletics_competitor.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+nul
+
+# Test outputs
+test_report.html
+.pytest_cache/

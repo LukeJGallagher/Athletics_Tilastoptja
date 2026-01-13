@@ -1,0 +1,58 @@
+# GitHub Actions workflow to sync data to Azure SQL weekly
+# The "Motor" that runs your Python scraper on schedule
+#
+# SETUP REQUIRED:
+# 1. Azure Portal: Create SQL Database (Free tier available)
+# 2. Azure Portal: Get ODBC connection string from Connection Strings
+# 3. GitHub: Settings > Secrets > Actions > New repository secret
+#    Name: SQL_CONNECTION_STRING
+#    Value: Your Azure ODBC connection string (include password!)
+# 4. Azure Portal: SQL Server > Networking > Check "Allow Azure services"
+
+name: Weekly Azure SQL Sync
+
+on:
+  schedule:
+    # Run every Sunday at 03:00 UTC (weekly sync)
+    - cron: '0 3 * * 0'
+  workflow_dispatch:  # Allow manual trigger for testing
+
+jobs:
+  sync-to-azure:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Get the code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # Step 3: Install ODBC driver for Azure SQL
+      - name: Install ODBC Driver
+        run: |
+          curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+          curl https://packages.microsoft.com/config/ubuntu/22.04/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list
+          sudo apt-get update
+          sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18 unixodbc-dev
+
+      # Step 4: Install Python dependencies
+      - name: Install dependencies
+        run: |
+          pip install pyodbc pandas requests beautifulsoup4 python-dotenv
+
+      # Step 5: Run the Azure sync script
+      - name: Sync to Azure SQL
+        env:
+          AZURE_SQL_CONN: ${{ secrets.SQL_CONNECTION_STRING }}
+        run: |
+          python azure_sync.py
+
+      # Step 6: Log result (optional)
+      - name: Log sync completion
+        run: |
+          echo "Azure SQL sync completed at $(date)"

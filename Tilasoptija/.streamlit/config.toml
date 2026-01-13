@@ -1,0 +1,14 @@
+[theme]
+# Saudi Arabia National Colors Theme
+base = "dark"
+primaryColor = "#006C35"          # Saudi Green
+backgroundColor = "#0E1117"        # Dark background
+secondaryBackgroundColor = "#1A1F25"  # Slightly lighter dark
+textColor = "#FFFFFF"              # White text
+font = "sans serif"
+
+[server]
+headless = true
+
+[browser]
+gatherUsageStats = false

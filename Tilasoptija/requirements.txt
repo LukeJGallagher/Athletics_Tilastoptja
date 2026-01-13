@@ -1,0 +1,30 @@
+# Core dependencies
+streamlit>=1.28.0
+pandas>=2.0.0
+numpy>=1.24.0
+altair>=5.0.0
+
+# Database - Local SQLite (built into Python)
+# sqlite3  # Built into Python - no install needed
+
+# Database - Azure SQL (for cloud deployment)
+pyodbc>=5.0.0
+sqlalchemy>=2.0.0
+
+# HTTP requests for API calls
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+
+# Environment variables
+python-dotenv>=1.0.0
+
+# Optional: AI features (comment out if not using)
+# openai>=1.0.0
+
+# PDF/Report generation (optional)
+# weasyprint>=60.0
+# jinja2>=3.1.0
+
+# Development/Testing
+# pytest>=7.0.0
+# playwright>=1.40.0
