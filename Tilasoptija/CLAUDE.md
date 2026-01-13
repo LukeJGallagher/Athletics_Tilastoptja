@@ -14,13 +14,16 @@ streamlit run athletics_app_Deploy.py
 
 The app uses dark theme configured in `.streamlit/config.toml`.
 
-## Data Source - SINGLE SOURCE OF TRUTH
+## Data Storage Policy
 
-**Primary Data File:** `Tilastoptja_Data/ksaoutput_full.csv`
-- This is the ONLY source file for building all databases
+**GitHub contains CODE ONLY** - No data files are committed to GitHub. All data lives in Azure SQL.
+
+**Local Data Source:** `Tilastoptja_Data/ksaoutput_full.csv`
+- Used for local development and initial database builds
 - Contains ~13 million rows with all competition data
 - Includes `wapoints` (WA Points) column for rankings
 - Semicolon-delimited (`;`)
+- **NOT committed to GitHub** (blocked by `.gitignore`)
 
 ## Building Databases
 
@@ -275,13 +278,10 @@ python azure_sync.py
    AZURE_SQL_CONN=Driver={ODBC Driver 18 for SQL Server};Server=tcp:athletics-server-ksa.database.windows.net,1433;Database=athletics_data;Uid=athletics_admin;Pwd=YOUR_PASSWORD;Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;
    ```
 
-#### Step 3: Create GitHub Repository
-1. Create new repo: `Athletic_Results_Tilastopaja`
-2. Add remote and push:
-   ```bash
-   git remote add origin https://github.com/YOUR_USERNAME/Athletic_Results_Tilastopaja.git
-   git push -u origin main
-   ```
+#### Step 3: GitHub Repository
+Repository: `https://github.com/LukeJGallagher/Athletics_Tilastoptja`
+
+**IMPORTANT: No data files in GitHub** - Only code goes to GitHub. All data (CSV, DB, parquet, xlsx) is stored in Azure SQL only. See `.gitignore` for blocked file types.
 
 #### Step 4: Add GitHub Secret
 1. GitHub repo > **Settings** > **Secrets and variables** > **Actions**
