@@ -2,21 +2,18 @@
 .env
 .streamlit/secrets.toml
 
-# Large data files (keep filtered DBs, exclude full CSV)
-Tilastoptja_Data/ksaoutput_full.csv
-Tilastoptja_Data/ksaoutput20y.csv
-Tilastoptja_Data/ksaoutput_full_new.csv
-Tilastoptja_Data/*.tmp
-Tilastoptja_Data/backups/
-
-# Old/backup databases
-SQL/athletics.db
-SQL/athleticsold.db
-SQL/saudi_athletes.db
-
-# Large database - exceeds GitHub 100MB limit
-# Will be built on first run or use Git LFS
-SQL/athletics_competitor.db
+# ALL DATA FILES - Data goes to Azure only, not GitHub
+*.csv
+*.db
+*.sqlite
+*.sqlite3
+*.parquet
+*.xlsx
+*.xls
+Data/
+SQL/
+Tilastoptja_Data/
+Athlete_List_Saudi/
 
 # Python
 __pycache__/
