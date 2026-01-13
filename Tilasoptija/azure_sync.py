@@ -29,6 +29,13 @@ import argparse
 from datetime import datetime, timedelta
 import pandas as pd
 
+# Load .env file if present (for local development)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # dotenv not required in GitHub Actions
+
 # Try to import pyodbc
 try:
     import pyodbc
