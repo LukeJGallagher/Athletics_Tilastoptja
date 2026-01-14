@@ -22,9 +22,10 @@ python-dotenv>=1.0.0
 # Optional: AI features (comment out if not using)
 # openai>=1.0.0
 
-# PDF/Report generation (optional)
-# weasyprint>=60.0
-# jinja2>=3.1.0
+# PDF/Report generation
+reportlab>=4.0.0
+# weasyprint>=60.0  # Alternative PDF generator
+# jinja2>=3.1.0     # Template engine (for HTML reports)
 
 # Development/Testing
 # pytest>=7.0.0
