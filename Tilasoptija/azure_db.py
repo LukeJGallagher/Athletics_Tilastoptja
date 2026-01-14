@@ -132,25 +132,12 @@ def get_azure_connection():
         conn_str += ';Connection Timeout=120'
 
     conn = None
-    max_retries = 3
-    last_error = None
-
-    for attempt in range(max_retries):
-        try:
-            conn = pyodbc.connect(conn_str, timeout=120)
-            yield conn
-            return
-        except pyodbc.Error as e:
-            last_error = e
-            if attempt < max_retries - 1:
-                import time
-                print(f"DEBUG: Azure connection attempt {attempt + 1} failed, retrying in 5 seconds...")
-                time.sleep(5)
-            else:
-                raise
-        finally:
-            if conn:
-                conn.close()
+    try:
+        conn = pyodbc.connect(conn_str, timeout=120)
+        yield conn
+    finally:
+        if conn:
+            conn.close()
 
 
 @contextmanager
