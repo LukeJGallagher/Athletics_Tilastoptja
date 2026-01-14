@@ -802,22 +802,33 @@ def load_sqlite_data(db_filename: str):
     - Streamlit Cloud: Uses Azure SQL if AZURE_SQL_CONN secret is set
     - Local: Uses SQLite files
     """
+    # Try Azure SQL / SQLite via azure_db module (auto-detects which to use)
+    db_name = db_filename.replace('SQL/', '').replace('.db', '').replace('athletics_', '')
+
     try:
-        # Try Azure SQL / SQLite via azure_db module (auto-detects which to use)
-        db_name = db_filename.replace('SQL/', '').replace('.db', '').replace('athletics_', '')
         df = query_data("SELECT * FROM athletics_data", db_name=db_name)
+        if df.empty:
+            st.warning(f"No data returned from database. Connection mode: {get_connection_mode()}")
+            return pd.DataFrame()
     except Exception as e:
-        # Fallback to direct SQLite connection for local dev
+        # If Azure/query_data fails, fall back to direct SQLite
+        if get_connection_mode() == 'azure':
+            st.error(f"Azure SQL connection failed: {str(e)}. Attempting local SQLite fallback...")
+
         base_dir = os.path.dirname(os.path.abspath(__file__))
         db_path = os.path.join(base_dir, db_filename)
 
         if not os.path.exists(db_path):
-            st.warning(f"Database not found: {db_filename}. Connection mode: {get_connection_mode()}")
+            st.error(f"Database not found: {db_filename}. Connection mode: {get_connection_mode()}")
             return pd.DataFrame()
 
-        conn = sqlite3.connect(db_path)
-        df = pd.read_sql_query("SELECT * FROM athletics_data", conn)
-        conn.close()
+        try:
+            conn = sqlite3.connect(db_path)
+            df = pd.read_sql_query("SELECT * FROM athletics_data", conn)
+            conn.close()
+        except Exception as e2:
+            st.error(f"SQLite fallback also failed: {str(e2)}")
+            return pd.DataFrame()
 
     # Apply same transformations as CSV loader
     # Create Athlete_Name from firstname + lastname if needed
@@ -921,21 +932,30 @@ def load_sqlite_data(db_filename: str):
 def load_major_champs_data(db_filename: str):
     """Load data from major championships database (Azure SQL or local SQLite)."""
     try:
-        # Try Azure SQL / SQLite via azure_db module
-        db_name = db_filename.replace('SQL/', '').replace('.db', '').replace('_', '')
-        df = query_data("SELECT * FROM athletics_data", db_name='major')  # Always use 'major' for major champs
+        # Try Azure SQL / SQLite via azure_db module (always use 'major' for major champs)
+        df = query_data("SELECT * FROM athletics_data", db_name='major')
+        if df.empty:
+            st.warning(f"No data returned from major championships database. Connection mode: {get_connection_mode()}")
+            return pd.DataFrame()
     except Exception as e:
         # Fallback to direct SQLite connection
+        if get_connection_mode() == 'azure':
+            st.error(f"Azure SQL connection failed: {str(e)}. Attempting local SQLite fallback...")
+
         base_dir = os.path.dirname(os.path.abspath(__file__))
         db_path = os.path.join(base_dir, db_filename)
 
         if not os.path.exists(db_path):
-            st.warning(f"Major championships database not found: {db_filename}")
+            st.error(f"Major championships database not found: {db_filename}")
             return pd.DataFrame()
 
-        conn = sqlite3.connect(db_path)
-        df = pd.read_sql_query("SELECT * FROM athletics_data", conn)
-        conn.close()
+        try:
+            conn = sqlite3.connect(db_path)
+            df = pd.read_sql_query("SELECT * FROM athletics_data", conn)
+            conn.close()
+        except Exception as e2:
+            st.error(f"SQLite fallback also failed: {str(e2)}")
+            return pd.DataFrame()
 
     # Transform new Tilastopaja column format to dashboard format
     if 'firstname' in df.columns:
@@ -1071,8 +1091,14 @@ def load_competitor_data():
     try:
         # Try Azure SQL / SQLite via azure_db module
         df = query_data("SELECT * FROM athletics_data", db_name='competitor')
+        if df.empty:
+            st.warning(f"No data returned from competitor database. Connection mode: {get_connection_mode()}")
+            return load_data()  # Fall back to main database
     except Exception as e:
         # Fallback to direct SQLite connection or main database
+        if get_connection_mode() == 'azure':
+            st.error(f"Azure SQL connection failed: {str(e)}. Attempting local SQLite fallback...")
+
         base_dir = os.path.dirname(os.path.abspath(__file__))
         db_path = os.path.join(base_dir, COMPETITOR_DB_FILE)
 
@@ -1080,9 +1106,13 @@ def load_competitor_data():
             # Fall back to main deploy database if competitor DB doesn't exist
             return load_data()
 
-        conn = sqlite3.connect(db_path)
-        df = pd.read_sql("SELECT * FROM athletics_data", conn)
-        conn.close()
+        try:
+            conn = sqlite3.connect(db_path)
+            df = pd.read_sql("SELECT * FROM athletics_data", conn)
+            conn.close()
+        except Exception as e2:
+            st.error(f"SQLite fallback also failed: {str(e2)}. Using main database...")
+            return load_data()
 
     # Clean athlete data (deduplicate IDs, normalize names)
     if not df.empty:
