@@ -131,9 +131,35 @@ def get_azure_connection():
     else:
         conn_str += ';Connection Timeout=120'
 
+    # Retry logic for serverless database wake-up
+    import time
+    max_retries = 3
+    retry_delay = 10  # seconds
+
     conn = None
+    last_error = None
+
+    for attempt in range(max_retries):
+        try:
+            conn = pyodbc.connect(conn_str, timeout=120)
+            break  # Success - exit retry loop
+        except pyodbc.Error as e:
+            last_error = e
+            error_msg = str(e)
+            # Check if it's a "database not available" error (serverless paused)
+            if '40613' in error_msg or 'not currently available' in error_msg.lower():
+                if attempt < max_retries - 1:
+                    print(f"Database is waking up... attempt {attempt + 1}/{max_retries}, waiting {retry_delay}s")
+                    time.sleep(retry_delay)
+                    retry_delay = retry_delay * 2  # Exponential backoff
+                    continue
+            # For other errors, raise immediately
+            raise
+
+    if conn is None:
+        raise last_error if last_error else Exception("Failed to connect to Azure SQL")
+
     try:
-        conn = pyodbc.connect(conn_str, timeout=120)
         yield conn
     finally:
         if conn:
