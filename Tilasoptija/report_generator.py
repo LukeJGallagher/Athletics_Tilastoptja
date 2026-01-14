@@ -38,20 +38,23 @@ except ImportError:
     ALTAIR_AVAILABLE = False
 
 
-# Report styling constants
-COLORS = {
-    'primary': colors.HexColor('#1a5f7a'),
-    'secondary': colors.HexColor('#57c5b6'),
-    'success': colors.HexColor('#28a745'),
-    'warning': colors.HexColor('#ffc107'),
-    'danger': colors.HexColor('#dc3545'),
-    'dark': colors.HexColor('#343a40'),
-    'light': colors.HexColor('#f8f9fa'),
-    'ksa_green': colors.HexColor('#006c35'),
-    'gold': colors.HexColor('#ffd700'),
-    'silver': colors.HexColor('#c0c0c0'),
-    'bronze': colors.HexColor('#cd7f32'),
-}
+# Report styling constants - only define if reportlab is available
+if REPORTLAB_AVAILABLE:
+    COLORS = {
+        'primary': colors.HexColor('#1a5f7a'),
+        'secondary': colors.HexColor('#57c5b6'),
+        'success': colors.HexColor('#28a745'),
+        'warning': colors.HexColor('#ffc107'),
+        'danger': colors.HexColor('#dc3545'),
+        'dark': colors.HexColor('#343a40'),
+        'light': colors.HexColor('#f8f9fa'),
+        'ksa_green': colors.HexColor('#006c35'),
+        'gold': colors.HexColor('#ffd700'),
+        'silver': colors.HexColor('#c0c0c0'),
+        'bronze': colors.HexColor('#cd7f32'),
+    }
+else:
+    COLORS = {}
 
 
 def check_dependencies() -> Tuple[bool, str]:
