@@ -10,6 +10,8 @@ import datetime
 import math
 import matplotlib  # Required for pandas Styler background_gradient
 from country_codes import COUNTRY_CODES
+# Azure SQL / SQLite database connection module
+from azure_db import query_data, get_connection_mode
 from discipline_knowledge import (
     DISCIPLINE_KNOWLEDGE, TOKYO_2025_STANDARDS, LA_2028_STANDARDS,
     EVENT_QUOTAS as DISCIPLINE_QUOTAS, get_event_standard, get_event_quota, get_event_knowledge
@@ -794,17 +796,28 @@ def load_csv_data(csv_filename: str):
 
 @st.cache_data
 def load_sqlite_data(db_filename: str):
-    """Load data from SQLite database (converted from CSV)."""
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    db_path = os.path.join(base_dir, db_filename)
+    """Load data from database (Azure SQL or local SQLite).
 
-    if not os.path.exists(db_path):
-        st.warning(f"SQLite database not found: {db_filename}")
-        return pd.DataFrame()
+    Automatically detects environment:
+    - Streamlit Cloud: Uses Azure SQL if AZURE_SQL_CONN secret is set
+    - Local: Uses SQLite files
+    """
+    try:
+        # Try Azure SQL / SQLite via azure_db module (auto-detects which to use)
+        db_name = db_filename.replace('SQL/', '').replace('.db', '').replace('athletics_', '')
+        df = query_data("SELECT * FROM athletics_data", db_name=db_name)
+    except Exception as e:
+        # Fallback to direct SQLite connection for local dev
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        db_path = os.path.join(base_dir, db_filename)
 
-    conn = sqlite3.connect(db_path)
-    df = pd.read_sql_query("SELECT * FROM athletics_data", conn)
-    conn.close()
+        if not os.path.exists(db_path):
+            st.warning(f"Database not found: {db_filename}. Connection mode: {get_connection_mode()}")
+            return pd.DataFrame()
+
+        conn = sqlite3.connect(db_path)
+        df = pd.read_sql_query("SELECT * FROM athletics_data", conn)
+        conn.close()
 
     # Apply same transformations as CSV loader
     # Create Athlete_Name from firstname + lastname if needed
@@ -906,17 +919,23 @@ def load_sqlite_data(db_filename: str):
 
 @st.cache_data
 def load_major_champs_data(db_filename: str):
-    """Load data from major championships SQLite database (new Tilastopaja format)."""
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    db_path = os.path.join(base_dir, db_filename)
+    """Load data from major championships database (Azure SQL or local SQLite)."""
+    try:
+        # Try Azure SQL / SQLite via azure_db module
+        db_name = db_filename.replace('SQL/', '').replace('.db', '').replace('_', '')
+        df = query_data("SELECT * FROM athletics_data", db_name='major')  # Always use 'major' for major champs
+    except Exception as e:
+        # Fallback to direct SQLite connection
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        db_path = os.path.join(base_dir, db_filename)
 
-    if not os.path.exists(db_path):
-        st.warning(f"Major championships database not found: {db_filename}")
-        return pd.DataFrame()
+        if not os.path.exists(db_path):
+            st.warning(f"Major championships database not found: {db_filename}")
+            return pd.DataFrame()
 
-    conn = sqlite3.connect(db_path)
-    df = pd.read_sql_query("SELECT * FROM athletics_data", conn)
-    conn.close()
+        conn = sqlite3.connect(db_path)
+        df = pd.read_sql_query("SELECT * FROM athletics_data", conn)
+        conn.close()
 
     # Transform new Tilastopaja column format to dashboard format
     if 'firstname' in df.columns:
@@ -1048,17 +1067,22 @@ def load_data(_cache_version="v8"):  # Change version to force cache refresh
 
 @st.cache_data
 def load_competitor_data():
-    """Load competitor analysis data (2024-today) from separate optimized database."""
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    db_path = os.path.join(base_dir, COMPETITOR_DB_FILE)
+    """Load competitor analysis data (2024-today) from database (Azure SQL or local SQLite)."""
+    try:
+        # Try Azure SQL / SQLite via azure_db module
+        df = query_data("SELECT * FROM athletics_data", db_name='competitor')
+    except Exception as e:
+        # Fallback to direct SQLite connection or main database
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        db_path = os.path.join(base_dir, COMPETITOR_DB_FILE)
 
-    if not os.path.exists(db_path):
-        # Fall back to main deploy database if competitor DB doesn't exist
-        return load_data()
+        if not os.path.exists(db_path):
+            # Fall back to main deploy database if competitor DB doesn't exist
+            return load_data()
 
-    conn = sqlite3.connect(db_path)
-    df = pd.read_sql("SELECT * FROM athletics_data", conn)
-    conn.close()
+        conn = sqlite3.connect(db_path)
+        df = pd.read_sql("SELECT * FROM athletics_data", conn)
+        conn.close()
 
     # Clean athlete data (deduplicate IDs, normalize names)
     if not df.empty:

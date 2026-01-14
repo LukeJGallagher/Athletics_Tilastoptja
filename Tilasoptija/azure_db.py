@@ -53,8 +53,17 @@ LOCAL_DB_PATHS = {
     'ksa': 'SQL/ksa_athletics.db',
 }
 
-# Azure SQL connection (from environment variable)
+# Azure SQL connection (from environment variable or Streamlit secrets)
 AZURE_SQL_CONN = os.getenv('AZURE_SQL_CONN')
+
+# Try to get from Streamlit secrets if not in environment
+if not AZURE_SQL_CONN:
+    try:
+        import streamlit as st
+        if hasattr(st, 'secrets') and 'AZURE_SQL_CONN' in st.secrets:
+            AZURE_SQL_CONN = st.secrets['AZURE_SQL_CONN']
+    except (ImportError, FileNotFoundError, KeyError):
+        pass  # Streamlit not available or secrets not configured
 
 # Determine which mode we're in
 USE_AZURE = bool(AZURE_SQL_CONN) and PYODBC_AVAILABLE
