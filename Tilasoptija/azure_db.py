@@ -53,20 +53,39 @@ LOCAL_DB_PATHS = {
     'ksa': 'SQL/ksa_athletics.db',
 }
 
-# Azure SQL connection (from environment variable or Streamlit secrets)
-AZURE_SQL_CONN = os.getenv('AZURE_SQL_CONN')
+# Azure SQL connection string (lazy-loaded)
+_AZURE_SQL_CONN = None
 
-# Try to get from Streamlit secrets if not in environment
-if not AZURE_SQL_CONN:
-    try:
-        import streamlit as st
-        if hasattr(st, 'secrets') and 'AZURE_SQL_CONN' in st.secrets:
-            AZURE_SQL_CONN = st.secrets['AZURE_SQL_CONN']
-    except (ImportError, FileNotFoundError, KeyError):
-        pass  # Streamlit not available or secrets not configured
+def _get_azure_conn_string():
+    """Get Azure SQL connection string from env or Streamlit secrets (lazy-loaded)."""
+    global _AZURE_SQL_CONN
 
-# Determine which mode we're in
-USE_AZURE = bool(AZURE_SQL_CONN) and PYODBC_AVAILABLE
+    if _AZURE_SQL_CONN is not None:
+        return _AZURE_SQL_CONN
+
+    # Try environment variable first
+    _AZURE_SQL_CONN = os.getenv('AZURE_SQL_CONN')
+
+    # Try Streamlit secrets if not in environment
+    if not _AZURE_SQL_CONN:
+        try:
+            import streamlit as st
+            if hasattr(st, 'secrets') and 'AZURE_SQL_CONN' in st.secrets:
+                _AZURE_SQL_CONN = st.secrets['AZURE_SQL_CONN']
+        except (ImportError, FileNotFoundError, KeyError, AttributeError):
+            pass  # Streamlit not available or secrets not configured
+
+    return _AZURE_SQL_CONN
+
+# Legacy compatibility
+AZURE_SQL_CONN = _get_azure_conn_string()
+
+# Determine which mode we're in (re-evaluated each time)
+def _use_azure():
+    """Check if Azure SQL should be used."""
+    return bool(_get_azure_conn_string()) and PYODBC_AVAILABLE
+
+USE_AZURE = _use_azure()
 
 
 # =============================================================================
@@ -75,7 +94,7 @@ USE_AZURE = bool(AZURE_SQL_CONN) and PYODBC_AVAILABLE
 
 def get_connection_mode() -> str:
     """Return current connection mode: 'azure' or 'sqlite'"""
-    return 'azure' if USE_AZURE else 'sqlite'
+    return 'azure' if _use_azure() else 'sqlite'
 
 
 @contextmanager
@@ -90,12 +109,13 @@ def get_azure_connection():
     if not PYODBC_AVAILABLE:
         raise ImportError("pyodbc is required for Azure SQL connections. Install with: pip install pyodbc")
 
-    if not AZURE_SQL_CONN:
-        raise ValueError("AZURE_SQL_CONN environment variable not set")
+    conn_str = _get_azure_conn_string()
+    if not conn_str:
+        raise ValueError("AZURE_SQL_CONN not found in environment or Streamlit secrets")
 
     conn = None
     try:
-        conn = pyodbc.connect(AZURE_SQL_CONN)
+        conn = pyodbc.connect(conn_str)
         yield conn
     finally:
         if conn:
@@ -140,7 +160,7 @@ def get_connection(db_name: str = 'deploy'):
         with get_connection() as conn:
             df = pd.read_sql("SELECT * FROM athletics_data", conn)
     """
-    if USE_AZURE:
+    if _use_azure():
         with get_azure_connection() as conn:
             yield conn
     else:
@@ -157,12 +177,15 @@ def get_sqlalchemy_engine(db_name: str = 'deploy') -> Optional['Engine']:
     if not SQLALCHEMY_AVAILABLE:
         return None
 
-    if USE_AZURE:
+    if _use_azure():
         # Azure SQL connection string for SQLAlchemy
         # Format: mssql+pyodbc:///?odbc_connect=<connection_string>
         from urllib.parse import quote_plus
-        conn_str = quote_plus(AZURE_SQL_CONN)
-        return create_engine(f"mssql+pyodbc:///?odbc_connect={conn_str}")
+        conn_str = _get_azure_conn_string()
+        if conn_str:
+            conn_str_encoded = quote_plus(conn_str)
+            return create_engine(f"mssql+pyodbc:///?odbc_connect={conn_str_encoded}")
+        return None
     else:
         # SQLite connection
         db_path = LOCAL_DB_PATHS.get(db_name, LOCAL_DB_PATHS['deploy'])
@@ -243,7 +266,7 @@ def create_azure_table_from_sqlite(sqlite_db: str = 'deploy', table_name: str = 
     Create Azure SQL table with same schema as SQLite table.
     Run this once during initial setup.
     """
-    if not USE_AZURE:
+    if not _use_azure():
         print("Azure SQL not configured. Set AZURE_SQL_CONN environment variable.")
         return
 
@@ -295,7 +318,7 @@ def migrate_sqlite_to_azure(sqlite_db: str = 'deploy', table_name: str = 'athlet
         table_name: Table to migrate
         batch_size: Number of rows per batch (for memory efficiency)
     """
-    if not USE_AZURE:
+    if not _use_azure():
         print("Azure SQL not configured. Set AZURE_SQL_CONN environment variable.")
         return
 
@@ -343,7 +366,7 @@ def sync_new_records_to_azure(new_records: pd.DataFrame, table_name: str = 'athl
     Returns:
         Number of rows inserted
     """
-    if not USE_AZURE:
+    if not _use_azure():
         print("Azure SQL not configured. Skipping sync.")
         return 0
 
@@ -370,7 +393,7 @@ def test_connection() -> dict:
     """
     result = {
         'mode': get_connection_mode(),
-        'azure_configured': bool(AZURE_SQL_CONN),
+        'azure_configured': bool(_get_azure_conn_string()),
         'pyodbc_available': PYODBC_AVAILABLE,
         'sqlalchemy_available': SQLALCHEMY_AVAILABLE,
         'connection_test': 'not_run',
