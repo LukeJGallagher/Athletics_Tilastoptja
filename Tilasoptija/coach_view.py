@@ -336,7 +336,7 @@ def show_competition_prep_hub(df: pd.DataFrame):
                     gender_key = 'men' if gender == 'Men' or gender == 'M' else 'women'
                     standard = get_event_standard(event, 'tokyo_2025', gender_key)
 
-                    col1, col2, col3, col4, col5 = st.columns([3, 2, 2, 2, 1])
+                    col1, col2, col3, col4, col5, col6 = st.columns([2.5, 1.5, 2, 3, 1.5, 1])
 
                     with col1:
                         # Ensure label is not empty to avoid Streamlit warning
@@ -364,15 +364,26 @@ def show_competition_prep_hub(df: pd.DataFrame):
                             st.caption("Standard: N/A")
 
                     with col4:
-                        performances = get_athlete_recent_performances(ksa_df, athlete_id, event, 5)
-                        if len(performances) >= 3:
-                            results = [p['result'] for p in performances]
+                        # Show last 3 competition times
+                        performances = get_athlete_recent_performances(ksa_df, athlete_id, event, 3)
+                        if performances:
+                            event_type = get_event_type(event)
+                            times_list = [format_benchmark_for_display(p['result'], event_type) for p in performances]
+                            st.caption(f"Last 3: {', '.join(times_list)}")
+                        else:
+                            st.caption("Last 3: N/A")
+
+                    with col5:
+                        # Form trend
+                        performances_5 = get_athlete_recent_performances(ksa_df, athlete_id, event, 5)
+                        if len(performances_5) >= 3:
+                            results = [p['result'] for p in performances_5]
                             trend = detect_trend(results, get_event_type(event))
-                            st.caption(f"Form: {get_trend_symbol(trend)} {trend.title()}")
+                            st.caption(f"{get_trend_symbol(trend)} {trend.title()}")
                         else:
                             st.caption("Form: N/A")
 
-                    with col5:
+                    with col6:
                         if st.button("View", key=f"report_{athlete_name}_{event}"):
                             st.session_state['selected_athlete_for_report'] = {
                                 'name': athlete_name,
