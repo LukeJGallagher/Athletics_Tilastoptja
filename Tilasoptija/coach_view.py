@@ -373,13 +373,15 @@ def show_competition_prep_hub(df: pd.DataFrame):
                             st.caption("Form: N/A")
 
                     with col5:
-                        if st.button("Report", key=f"report_{athlete_name}_{event}"):
+                        if st.button("View", key=f"report_{athlete_name}_{event}"):
                             st.session_state['selected_athlete_for_report'] = {
                                 'name': athlete_name,
                                 'id': athlete_id,
                                 'event': event
                             }
-                            st.toast(f"Click 'Athlete Reports' tab to view {athlete_name}'s report", icon="📋")
+                            # Auto-switch to Reports tab
+                            st.session_state['coach_view_tab'] = "Athlete Reports"
+                            st.rerun()
 
     # Store selected championship in session state for other tabs
     st.session_state['selected_championship'] = selected_champ
@@ -1562,7 +1564,7 @@ def render_coach_view(df: pd.DataFrame):
     </div>
     """, unsafe_allow_html=True)
 
-    # Coach View tabs
+    # Coach View navigation - using selectbox for programmatic control
     tab_names = [
         "Competition Prep",
         "Athlete Reports",
@@ -1570,16 +1572,30 @@ def render_coach_view(df: pd.DataFrame):
         "Export Center"
     ]
 
-    tabs = st.tabs(tab_names)
+    # Check if we should auto-switch tabs (e.g., from "View" button in Competition Prep)
+    default_tab = st.session_state.get('coach_view_tab', "Competition Prep")
+    if default_tab not in tab_names:
+        default_tab = "Competition Prep"
 
-    with tabs[0]:
+    # Navigation selectbox in sidebar or main area
+    selected_tab = st.selectbox(
+        "Navigate to",
+        tab_names,
+        index=tab_names.index(default_tab),
+        key="coach_nav_select"
+    )
+
+    # Update session state
+    st.session_state['coach_view_tab'] = selected_tab
+
+    st.markdown("---")
+
+    # Render selected tab content
+    if selected_tab == "Competition Prep":
         show_competition_prep_hub(df)
-
-    with tabs[1]:
+    elif selected_tab == "Athlete Reports":
         show_athlete_report_cards(df)
-
-    with tabs[2]:
+    elif selected_tab == "Competitor Watch":
         show_competitor_watch(df)
-
-    with tabs[3]:
+    elif selected_tab == "Export Center":
         show_export_center(df)
