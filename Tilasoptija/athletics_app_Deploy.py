@@ -6523,10 +6523,26 @@ def show_detailed_report(df_all):
 def main():
     # Load data once at the start with progress indicator
     with st.spinner("Loading athletics data..."):
+        # Show connection diagnostics
+        conn_mode = get_connection_mode()
+        st.info(f"Database connection mode: **{conn_mode}**")
+
+        # Check if secrets are configured (Streamlit Cloud)
+        if conn_mode == 'sqlite':
+            try:
+                if hasattr(st, 'secrets'):
+                    available_secrets = list(st.secrets.keys()) if st.secrets else []
+                    if 'AZURE_SQL_CONN' not in available_secrets:
+                        st.warning(f"⚠️ AZURE_SQL_CONN secret not found. Available secrets: {available_secrets}")
+                        st.info("💡 Add AZURE_SQL_CONN in Streamlit Cloud Settings > Secrets")
+            except:
+                pass
+
         df_all = load_data()
 
     if df_all.empty:
-        st.error("No data loaded. Please check the data source configuration.")
+        st.error("❌ No data loaded. Please check the data source configuration.")
+        st.info(f"Current connection mode: **{get_connection_mode()}**")
         return
 
     # Sidebar with Saudi branding and view mode toggle

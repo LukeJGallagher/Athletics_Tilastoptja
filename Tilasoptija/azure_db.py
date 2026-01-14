@@ -70,10 +70,22 @@ def _get_azure_conn_string():
     if not _AZURE_SQL_CONN:
         try:
             import streamlit as st
-            if hasattr(st, 'secrets') and 'AZURE_SQL_CONN' in st.secrets:
-                _AZURE_SQL_CONN = st.secrets['AZURE_SQL_CONN']
-        except (ImportError, FileNotFoundError, KeyError, AttributeError):
-            pass  # Streamlit not available or secrets not configured
+            # Debug: Check if secrets are available
+            if hasattr(st, 'secrets'):
+                # Try to access the secret
+                if 'AZURE_SQL_CONN' in st.secrets:
+                    _AZURE_SQL_CONN = st.secrets['AZURE_SQL_CONN']
+                else:
+                    # Debug: Print available secret keys (don't print values!)
+                    try:
+                        available_keys = list(st.secrets.keys())
+                        print(f"DEBUG: Streamlit secrets available but AZURE_SQL_CONN not found. Available keys: {available_keys}")
+                    except:
+                        print("DEBUG: Streamlit secrets object exists but can't list keys")
+            else:
+                print("DEBUG: Streamlit secrets not available (hasattr check failed)")
+        except (ImportError, FileNotFoundError, KeyError, AttributeError) as e:
+            print(f"DEBUG: Exception while checking Streamlit secrets: {type(e).__name__}: {e}")
 
     return _AZURE_SQL_CONN
 
