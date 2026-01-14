@@ -125,13 +125,32 @@ def get_azure_connection():
     if not conn_str:
         raise ValueError("AZURE_SQL_CONN not found in environment or Streamlit secrets")
 
+    # Increase timeout for serverless database wake-up (can take 30-60 seconds)
+    if 'Connection Timeout=' in conn_str:
+        conn_str = conn_str.replace('Connection Timeout=30', 'Connection Timeout=120')
+    else:
+        conn_str += ';Connection Timeout=120'
+
     conn = None
-    try:
-        conn = pyodbc.connect(conn_str)
-        yield conn
-    finally:
-        if conn:
-            conn.close()
+    max_retries = 3
+    last_error = None
+
+    for attempt in range(max_retries):
+        try:
+            conn = pyodbc.connect(conn_str, timeout=120)
+            yield conn
+            return
+        except pyodbc.Error as e:
+            last_error = e
+            if attempt < max_retries - 1:
+                import time
+                print(f"DEBUG: Azure connection attempt {attempt + 1} failed, retrying in 5 seconds...")
+                time.sleep(5)
+            else:
+                raise
+        finally:
+            if conn:
+                conn.close()
 
 
 @contextmanager
