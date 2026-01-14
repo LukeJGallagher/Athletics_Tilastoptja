@@ -143,7 +143,7 @@ MAJOR_COMPETITIONS_CID = {
 ###################################
 st.set_page_config(
     page_title="Saudi Athletics - Performance Analysis",
-    page_icon="Saudilogo.png",
+    page_icon="Tilasoptija/Saudilogo.png",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -6548,7 +6548,7 @@ def main():
     # Sidebar with Saudi branding and view mode toggle
     with st.sidebar:
         # Saudi Logo and Title
-        st.image("Saudilogo.png", width=120)
+        st.image("Tilasoptija/Saudilogo.png", width=120)
         st.markdown("## Saudi Athletics")
         st.markdown("*Performance Analysis Platform*")
         st.markdown("---")
