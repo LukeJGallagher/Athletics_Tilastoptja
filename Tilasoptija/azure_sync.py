@@ -88,7 +88,23 @@ def get_azure_connection():
     """Get Azure SQL connection."""
     if not AZURE_SQL_CONN:
         raise ValueError("AZURE_SQL_CONN environment variable not set!")
-    return pyodbc.connect(AZURE_SQL_CONN)
+
+    conn_str = AZURE_SQL_CONN
+
+    # Check available drivers
+    available_drivers = pyodbc.drivers()
+
+    # Try ODBC Driver 18 first (GitHub Actions has this)
+    if 'ODBC Driver 18 for SQL Server' in available_drivers:
+        return pyodbc.connect(conn_str)
+
+    # Fall back to SQL Server driver (Windows default)
+    if 'SQL Server' in available_drivers:
+        # Replace driver in connection string
+        conn_str_fallback = conn_str.replace('ODBC Driver 18 for SQL Server', 'SQL Server')
+        return pyodbc.connect(conn_str_fallback, timeout=60)
+
+    raise ValueError(f"No compatible ODBC driver found. Available: {available_drivers}")
 
 
 def test_azure_connection():
@@ -220,6 +236,10 @@ def fetch_new_records(since_date=None):
         response.raise_for_status()
 
         data = response.json()
+
+        # Handle nested response (data is in 'data' key)
+        if isinstance(data, dict) and 'data' in data:
+            data = data['data']
 
         if not data or not isinstance(data, list):
             print("No new records found.")
