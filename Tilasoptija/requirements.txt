@@ -8,7 +8,13 @@ matplotlib>=3.7.0
 # Database - Local SQLite (built into Python)
 # sqlite3  # Built into Python - no install needed
 
-# Database - Azure SQL (for cloud deployment)
+# Azure Blob Storage (recommended - simpler than SQL)
+azure-storage-blob>=12.19.0
+azure-identity>=1.15.0
+pyarrow>=14.0.0
+duckdb>=0.9.0
+
+# Database - Azure SQL (legacy - kept for compatibility)
 pyodbc>=5.0.0
 sqlalchemy>=2.0.0
 

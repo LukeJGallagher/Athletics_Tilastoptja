@@ -1,0 +1,79 @@
+# GitHub Actions workflow to sync Tilastopaja data to Azure Blob Storage
+# Runs weekly on Sunday at 02:00 UTC
+
+name: Weekly Data Sync (Azure Blob Storage)
+
+on:
+  schedule:
+    # Run weekly on Sunday at 02:00 UTC
+    - cron: '0 2 * * 0'
+  workflow_dispatch:  # Allow manual trigger
+    inputs:
+      full_refresh:
+        description: 'Full data refresh (rebuild from scratch)'
+        required: false
+        default: 'false'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Test Azure Blob Storage connection
+        env:
+          AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
+        run: |
+          python -c "from blob_storage import test_connection; print(test_connection())"
+
+      - name: Download latest data from Tilastopaja
+        run: |
+          python download_full_tilastopaja_data.py
+        continue-on-error: true
+
+      - name: Build local SQLite database
+        run: |
+          python rebuild_all_data.py --deploy
+        continue-on-error: true
+
+      - name: Migrate to Azure Blob Storage (Parquet)
+        env:
+          AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
+        run: |
+          python migrate_to_blob_storage.py --db deploy --force
+
+      - name: Verify upload
+        env:
+          AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
+        run: |
+          python -c "
+          from blob_storage import get_storage_usage, load_data
+          usage = get_storage_usage()
+          print('Storage Usage:', usage)
+          df = load_data()
+          print(f'Total rows: {len(df):,}')
+          print(f'Columns: {list(df.columns)}')
+          "
+
+      - name: Update sync log
+        run: |
+          echo "{\"last_sync\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\", \"status\": \"success\"}" > azure_sync_log.json
+
+      - name: Commit sync log
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add azure_sync_log.json
+          git diff --staged --quiet || git commit -m "Weekly sync: $(date +'%Y-%m-%d')"
+          git push || echo "Nothing to push"

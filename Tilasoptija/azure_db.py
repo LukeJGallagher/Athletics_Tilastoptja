@@ -1,15 +1,25 @@
 """
-Azure SQL Database Connection Module
-=====================================
+Azure Database Connection Module
+=================================
 
 This module provides a unified interface for database operations that works with:
-- Local SQLite (for development)
-- Azure SQL (for production/cloud deployment)
+- Azure Blob Storage + Parquet (RECOMMENDED - simpler, no driver issues)
+- Local SQLite (for development fallback)
+- Azure SQL (legacy - kept for compatibility)
 
-The connection type is determined by the AZURE_SQL_CONN environment variable.
-If set, uses Azure SQL. Otherwise, falls back to local SQLite.
+Priority order:
+1. Azure Blob Storage (if AZURE_STORAGE_CONNECTION_STRING is set)
+2. Azure SQL (if AZURE_SQL_CONN is set)
+3. Local SQLite (fallback)
 
-Setup Instructions:
+Setup Instructions (Blob Storage - Recommended):
+1. Create Azure Storage Account in Azure Portal
+2. Create container 'athletics-data'
+3. Get connection string from: Storage Account > Access Keys
+4. Add to GitHub Secrets as AZURE_STORAGE_CONNECTION_STRING
+5. Add to Streamlit Cloud Secrets
+
+Setup Instructions (Azure SQL - Legacy):
 1. Create Azure SQL Database in Azure Portal
 2. Get connection string from: Azure Portal > SQL Database > Connection Strings > ODBC
 3. Add to GitHub Secrets as SQL_CONNECTION_STRING
@@ -24,13 +34,26 @@ import pandas as pd
 from typing import Optional, Union
 from contextlib import contextmanager
 
-# Try to import pyodbc for Azure SQL
+# Try to import Azure Blob Storage (recommended)
+try:
+    from blob_storage import (
+        load_data as blob_load_data,
+        query as blob_query,
+        get_storage_mode,
+        _use_azure as _use_blob_storage,
+        AZURE_AVAILABLE as BLOB_AVAILABLE
+    )
+    BLOB_STORAGE_AVAILABLE = True
+except ImportError:
+    BLOB_STORAGE_AVAILABLE = False
+    BLOB_AVAILABLE = False
+
+# Try to import pyodbc for Azure SQL (legacy)
 try:
     import pyodbc
     PYODBC_AVAILABLE = True
 except ImportError:
     PYODBC_AVAILABLE = False
-    print("Warning: pyodbc not installed. Azure SQL features disabled.")
 
 # Try to import SQLAlchemy for better ORM support
 try:
@@ -93,9 +116,76 @@ def _get_azure_conn_string():
 AZURE_SQL_CONN = _get_azure_conn_string()
 
 # Determine which mode we're in (re-evaluated each time)
-def _use_azure():
-    """Check if Azure SQL should be used."""
+def _use_azure_sql():
+    """Check if Azure SQL should be used (legacy)."""
     return bool(_get_azure_conn_string()) and PYODBC_AVAILABLE
+
+# Alias for backwards compatibility
+_use_azure = _use_azure_sql
+
+
+def get_connection_mode() -> str:
+    """
+    Get current connection mode.
+
+    Returns one of:
+    - 'blob': Azure Blob Storage + Parquet (recommended)
+    - 'azure_sql': Azure SQL Database (legacy)
+    - 'sqlite': Local SQLite (fallback)
+    """
+    # Priority 1: Blob Storage (recommended)
+    if BLOB_STORAGE_AVAILABLE and _use_blob_storage():
+        return 'blob'
+
+    # Priority 2: Azure SQL (legacy)
+    if _use_azure_sql():
+        return 'azure_sql'
+
+    # Priority 3: Local SQLite
+    return 'sqlite'
+
+
+def load_athletics_data(db_name: str = 'deploy') -> pd.DataFrame:
+    """
+    Load athletics data from the best available source.
+
+    Priority:
+    1. Azure Blob Storage (Parquet) - if configured
+    2. Azure SQL - if configured (legacy)
+    3. Local SQLite - fallback
+
+    Returns:
+        pd.DataFrame with athletics data
+    """
+    mode = get_connection_mode()
+
+    if mode == 'blob':
+        print(f"Loading from Azure Blob Storage...")
+        return blob_load_data()
+
+    elif mode == 'azure_sql':
+        print(f"Loading from Azure SQL...")
+        try:
+            with get_azure_connection() as conn:
+                df = pd.read_sql("SELECT * FROM athletics_data", conn)
+                print(f"Loaded {len(df):,} rows from Azure SQL")
+                return df
+        except Exception as e:
+            print(f"Azure SQL error: {e}, falling back to SQLite")
+            mode = 'sqlite'
+
+    # SQLite fallback
+    print(f"Loading from local SQLite...")
+    db_path = LOCAL_DB_PATHS.get(db_name, LOCAL_DB_PATHS['deploy'])
+    if os.path.exists(db_path):
+        conn = sqlite3.connect(db_path)
+        df = pd.read_sql("SELECT * FROM athletics_data", conn)
+        conn.close()
+        print(f"Loaded {len(df):,} rows from SQLite")
+        return df
+
+    print(f"No data source available")
+    return pd.DataFrame()
 
 USE_AZURE = _use_azure()
 

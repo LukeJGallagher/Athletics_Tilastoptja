@@ -82,9 +82,28 @@ DATA_SOURCE = "deploy"  # Use optimized deployment databases (RECOMMENDED)
 - `EVENT_TYPE_MAP` - Maps event names to 'time', 'distance', or 'points'
 - Processes CSV in 500k row chunks for memory efficiency
 
-### Support Files
-- `country_codes.py` - `COUNTRY_CODES` dict mapping 3-letter codes to full names
-- `discipline_knowledge.py` - Qualification standards (Tokyo 2025, LA 2028), event quotas, and discipline documentation
+### Coach View Module: `coach_view.py`
+
+Simplified coach-focused interface imported by main app via `render_coach_view()`:
+- `show_competition_prep_hub()` - Championship selection, KSA squad overview, countdown
+- `show_athlete_report_cards()` - Qualification status, form projections, benchmarks
+- `show_competitor_watch()` - Rival monitoring, gaps, custom race builder
+- `show_export_center()` - PDF/HTML report generation
+
+Navigation uses `st.session_state['coach_view_tab']` for programmatic tab switching.
+
+### Support Modules
+
+| Module | Purpose |
+|--------|---------|
+| `projection_engine.py` | Weighted performance projections, confidence intervals, trend detection |
+| `historical_benchmarks.py` | Medal/final/semi/heat benchmark calculations from championship history |
+| `chart_components.py` | Reusable Altair charts (dark theme, export-ready) |
+| `country_codes.py` | `COUNTRY_CODES` dict mapping 3-letter codes to full names |
+| `discipline_knowledge.py` | Qualification standards (Tokyo 2025, LA 2028), event quotas |
+| `athlete_dedup.py` | Handle duplicate athlete entries (ID normalization, Arabic name prefixes) |
+| `report_generator.py` | PDF/HTML report generation with embedded charts |
+| `azure_db.py` | Database connection (SQLite local, Azure SQL cloud with auto-wake retry) |
 
 ## Qualification Standards
 
@@ -218,18 +237,68 @@ pytest tests/ --html=test_report.html
 - Report generation: < 5 seconds
 - PDF export: < 10 seconds
 
-## Azure SQL Deployment
+## Azure Blob Storage Deployment (Recommended)
+
+### Why Blob Storage over SQL?
+- No ODBC driver issues on Streamlit Cloud
+- No serverless wake-up delays (40613 errors)
+- Parquet is ~10x smaller than CSV
+- DuckDB provides fast SQL queries in-memory
+- 5 GB free tier (enough for 50+ sport projects)
+
+### Architecture
+```
+GitHub Code  →  GitHub Actions  →  Azure Blob Storage
+  Your repo      Weekly sync        Parquet files
+                                         ↓
+                                    DuckDB queries
+```
+
+### Deployment Files
+- `blob_storage.py` - Blob Storage module with DuckDB support
+- `migrate_to_blob_storage.py` - Migration script from SQLite
+- `.github/workflows/daily_sync.yml` - GitHub Actions (runs Sunday 02:00 UTC)
+
+### Environment Variables
+- `AZURE_STORAGE_CONNECTION_STRING` - Blob Storage connection string
+- Set in GitHub Secrets and Streamlit Cloud Secrets
+
+### Quick Setup
+```bash
+# 1. Test connection
+python blob_storage.py
+
+# 2. Migrate SQLite to Blob Storage
+python migrate_to_blob_storage.py --db deploy
+
+# 3. Verify
+python -c "from blob_storage import load_data; print(len(load_data()))"
+```
+
+### Usage in App
+```python
+from blob_storage import load_data, query
+
+# Load all data
+df = load_data()
+
+# SQL queries with DuckDB
+results = query("SELECT * FROM athletics_data WHERE nationality = 'KSA'")
+```
+
+See `AZURE_BLOB_STORAGE_GUIDE.md` for complete setup instructions.
+
+---
+
+## Azure SQL Deployment (Legacy)
+
+**Note:** Azure SQL is kept for compatibility but Blob Storage is recommended.
 
 ### Architecture (The "Sandwich")
 ```
 GitHub Code (Brain)  →  GitHub Actions (Motor)  →  Azure SQL (Memory)
      Your repo              Runs weekly              Cloud database
 ```
-
-### Deployment Files
-- `azure_db.py` - Database connection module (works with SQLite locally, Azure SQL in cloud)
-- `azure_sync.py` - Weekly sync script (fetches from Tilastopaja API, inserts to Azure)
-- `.github/workflows/weekly_azure_sync.yml` - GitHub Actions (runs Sunday 03:00 UTC)
 
 ### Azure SQL Database Details
 - **Server:** athletics-server-ksa.database.windows.net
@@ -238,21 +307,16 @@ GitHub Code (Brain)  →  GitHub Actions (Motor)  →  Azure SQL (Memory)
 - **Region:** UAE North
 - **Tier:** Free (100k vCore seconds/month)
 
-### Environment Variables for Azure
+### Environment Variables for Azure SQL
 - `AZURE_SQL_CONN` - Azure SQL ODBC connection string (set in GitHub Secrets as `SQL_CONNECTION_STRING`)
 - Also stored in `.env` for local testing
 
-### Azure Sync Commands
-```bash
-# Test connection
-python azure_sync.py --test
+### Azure Serverless Auto-Wake
 
-# Full table rebuild
-python azure_sync.py --full
-
-# Incremental sync (default - weekly)
-python azure_sync.py
-```
+The Azure SQL database uses serverless tier which auto-pauses after inactivity. `azure_db.py` includes retry logic:
+- Detects error code 40613 ("database not currently available")
+- Retries with exponential backoff (10s, 20s, 40s)
+- Maximum 3 retry attempts before failing
 
 ### Complete Setup Process
 
@@ -322,3 +386,33 @@ Key cached functions (1-hour TTL):
 - `get_qualification_by_round()` - Round-by-round qualification data
 
 Use `@st.cache_data(ttl=3600)` decorator with `_df` prefix for DataFrame arguments.
+
+## Common Issues and Fixes
+
+### Streamlit Cloud Deployment
+- **Image paths**: Use `Tilasoptija/Saudilogo.png` not `Saudilogo.png` (working directory is repo root)
+- **ODBC Driver**: Streamlit Cloud has Driver 17, not 18 - connection string auto-detects
+
+### Pandas Categorical Type Errors
+When concatenating columns that might be Categorical (e.g., country flags):
+```python
+# Wrong - causes TypeError
+df['col'] = df['Category_Col'] + ' ' + df['String_Col']
+
+# Correct - convert to string first
+df['col'] = df['Category_Col'].astype(str) + ' ' + df['String_Col'].astype(str)
+```
+
+### IndexError on Best Performance Lookup
+When finding best performance, handle NaN values:
+```python
+# Wrong - fails if no valid results
+best_val = event_df['Result_numeric'].min()
+best_row = event_df[event_df['Result_numeric'] == best_val].iloc[0]
+
+# Correct - filter NaN first, use idxmin
+event_df_valid = event_df[event_df['Result_numeric'].notna()]
+if not event_df_valid.empty:
+    best_idx = event_df_valid['Result_numeric'].idxmin()
+    best_row = event_df_valid.loc[best_idx]
+```
