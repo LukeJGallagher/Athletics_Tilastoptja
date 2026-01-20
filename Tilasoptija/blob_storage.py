@@ -212,16 +212,41 @@ def create_backup() -> Optional[str]:
 
 
 def load_data() -> pd.DataFrame:
-    """Load athletics data from Azure (or local SQLite fallback)."""
+    """Load athletics data from Azure (or local SQLite fallback).
+
+    Uses Streamlit session state caching when available for faster reloads.
+    """
+    # Try Streamlit session state cache first (fastest)
+    try:
+        import streamlit as st
+        if 'athletics_data_cache' in st.session_state:
+            df = st.session_state['athletics_data_cache']
+            if df is not None and not df.empty:
+                return df
+    except:
+        pass
+
+    # Load from Azure or SQLite
+    df = None
     if _use_azure():
         print("Loading from Azure Blob Storage...")
         df = download_parquet(MASTER_FILE)
         if df is not None and not df.empty:
             print(f"Loaded {len(df):,} rows from Azure")
-            return df
-        print("Azure empty or unavailable, falling back to local...")
 
-    return _load_local_sqlite()
+    if df is None or df.empty:
+        print("Azure empty or unavailable, falling back to local...")
+        df = _load_local_sqlite()
+
+    # Cache in session state if available
+    try:
+        import streamlit as st
+        if df is not None and not df.empty:
+            st.session_state['athletics_data_cache'] = df
+    except:
+        pass
+
+    return df if df is not None else pd.DataFrame()
 
 
 def _load_local_sqlite(db_name: str = 'deploy') -> pd.DataFrame:
@@ -322,18 +347,30 @@ _duckdb_ready = False
 
 
 def get_duckdb_connection():
-    """Get DuckDB connection with data loaded."""
+    """Get DuckDB connection with data loaded.
+
+    Uses Streamlit session state to persist connection across reruns.
+    """
     global _duckdb_conn, _duckdb_ready
 
     if not DUCKDB_AVAILABLE:
         print("DuckDB not available")
         return None
 
+    # Try Streamlit session state first (persists across reruns)
+    try:
+        import streamlit as st
+        if 'duckdb_conn' in st.session_state and st.session_state.get('duckdb_ready', False):
+            return st.session_state['duckdb_conn']
+    except:
+        pass
+
+    # Use module-level cache as fallback
     if _duckdb_conn is not None and _duckdb_ready:
         return _duckdb_conn
 
     try:
-        _duckdb_conn = duckdb.connect(':memory:')
+        conn = duckdb.connect(':memory:')
 
         print("Loading data into DuckDB...")
         df = load_data()
@@ -342,11 +379,22 @@ def get_duckdb_connection():
             print("No data available")
             return None
 
-        _duckdb_conn.register('athletics_data', df)
+        conn.register('athletics_data', df)
+
+        # Store in session state if available
+        try:
+            import streamlit as st
+            st.session_state['duckdb_conn'] = conn
+            st.session_state['duckdb_ready'] = True
+        except:
+            pass
+
+        # Also store in module-level variables
+        _duckdb_conn = conn
         _duckdb_ready = True
 
         print(f"DuckDB ready with {len(df):,} rows in 'athletics_data' table")
-        return _duckdb_conn
+        return conn
 
     except Exception as e:
         print(f"DuckDB error: {e}")
@@ -375,13 +423,36 @@ def query(sql: str) -> Optional[pd.DataFrame]:
 
 
 def refresh_data():
-    """Reload data from Azure into DuckDB."""
+    """Reload data from Azure into DuckDB.
+
+    Clears all caches and reloads fresh data.
+    """
     global _duckdb_conn, _duckdb_ready
 
+    # Close existing connection
     if _duckdb_conn is not None:
-        _duckdb_conn.close()
+        try:
+            _duckdb_conn.close()
+        except:
+            pass
     _duckdb_conn = None
     _duckdb_ready = False
+
+    # Clear Streamlit session state caches
+    try:
+        import streamlit as st
+        if 'athletics_data_cache' in st.session_state:
+            del st.session_state['athletics_data_cache']
+        if 'duckdb_conn' in st.session_state:
+            try:
+                st.session_state['duckdb_conn'].close()
+            except:
+                pass
+            del st.session_state['duckdb_conn']
+        if 'duckdb_ready' in st.session_state:
+            del st.session_state['duckdb_ready']
+    except:
+        pass
 
     return get_duckdb_connection()
 

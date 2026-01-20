@@ -352,7 +352,6 @@ def query_data(sql: str, db_name: str = 'deploy', params: tuple = None) -> pd.Da
             if _use_blob_storage():
                 # For simple "SELECT * FROM athletics_data" queries, use blob_load_data
                 if sql.strip().upper() == "SELECT * FROM ATHLETICS_DATA":
-                    print("Loading from Azure Blob Storage...")
                     return blob_load_data()
                 # For other queries, use DuckDB
                 result = blob_query(sql)
