@@ -194,9 +194,8 @@ USE_AZURE = _use_azure()
 # Connection Functions
 # =============================================================================
 
-def get_connection_mode() -> str:
-    """Return current connection mode: 'azure' or 'sqlite'"""
-    return 'azure' if _use_azure() else 'sqlite'
+# Note: get_connection_mode() is defined earlier (line ~127) with Blob Storage support
+# Do not duplicate it here
 
 
 @contextmanager
@@ -334,6 +333,11 @@ def query_data(sql: str, db_name: str = 'deploy', params: tuple = None) -> pd.Da
     """
     Execute a SQL query and return results as DataFrame.
 
+    Priority:
+    1. Azure Blob Storage + DuckDB (if configured)
+    2. Azure SQL (legacy)
+    3. Local SQLite (fallback)
+
     Args:
         sql: SQL query string
         db_name: Database name (only used for SQLite mode)
@@ -342,6 +346,22 @@ def query_data(sql: str, db_name: str = 'deploy', params: tuple = None) -> pd.Da
     Returns:
         pandas DataFrame with query results
     """
+    # Check connection mode - use first get_connection_mode (the one that checks blob)
+    if BLOB_STORAGE_AVAILABLE:
+        try:
+            if _use_blob_storage():
+                # For simple "SELECT * FROM athletics_data" queries, use blob_load_data
+                if sql.strip().upper() == "SELECT * FROM ATHLETICS_DATA":
+                    print("Loading from Azure Blob Storage...")
+                    return blob_load_data()
+                # For other queries, use DuckDB
+                result = blob_query(sql)
+                if result is not None:
+                    return result
+        except Exception as e:
+            print(f"Blob Storage query failed: {e}, falling back...")
+
+    # Fallback to Azure SQL or SQLite
     with get_connection(db_name) as conn:
         if params:
             return pd.read_sql(sql, conn, params=params)

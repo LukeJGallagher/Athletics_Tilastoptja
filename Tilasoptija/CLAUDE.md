@@ -16,7 +16,7 @@ The app uses dark theme configured in `.streamlit/config.toml`.
 
 ## Data Storage Policy
 
-**GitHub contains CODE ONLY** - No data files are committed to GitHub. All data lives in Azure SQL.
+**GitHub contains CODE ONLY** - No data files are committed to GitHub. All data lives in Azure Blob Storage (Parquet format).
 
 **Local Data Source:** `Tilastoptja_Data/ksaoutput_full.csv`
 - Used for local development and initial database builds
@@ -104,6 +104,7 @@ Navigation uses `st.session_state['coach_view_tab']` for programmatic tab switch
 | `athlete_dedup.py` | Handle duplicate athlete entries (ID normalization, Arabic name prefixes) |
 | `report_generator.py` | PDF/HTML report generation with embedded charts |
 | `azure_db.py` | Database connection (SQLite local, Azure SQL cloud with auto-wake retry) |
+| `blob_storage.py` | Azure Blob Storage with Parquet files, DuckDB queries, fallback to SQLite |
 
 ## Qualification Standards
 
@@ -143,7 +144,11 @@ All databases include `wapoints` column with index for fast queries.
 
 ## Key Dependencies
 
-pandas, sqlite3, streamlit, altair, numpy, pyodbc, sqlalchemy, requests, beautifulsoup4, python-dotenv
+pandas, sqlite3, streamlit, altair, numpy, requests, beautifulsoup4, python-dotenv
+
+**Azure Blob Storage:** azure-storage-blob, azure-identity, pyarrow, duckdb
+
+**Legacy Azure SQL:** pyodbc, sqlalchemy
 
 Optional: weasyprint, jinja2, playwright (for PDF/testing)
 
@@ -258,6 +263,13 @@ GitHub Code  →  GitHub Actions  →  Azure Blob Storage
 - `blob_storage.py` - Blob Storage module with DuckDB support
 - `migrate_to_blob_storage.py` - Migration script from SQLite
 - `.github/workflows/daily_sync.yml` - GitHub Actions (runs Sunday 02:00 UTC)
+
+### Azure Blob Storage Details
+- **Storage Account:** tilastoptija
+- **Container:** athletics-data
+- **Master File:** athletics_master.parquet
+- **Region:** UAE North
+- **Data Size:** ~2 MB (95,781 rows compressed)
 
 ### Environment Variables
 - `AZURE_STORAGE_CONNECTION_STRING` - Blob Storage connection string
