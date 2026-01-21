@@ -44,16 +44,18 @@ except ImportError:
 # =============================================================================
 
 CONTAINER_NAME = "athletics-data"
-MASTER_FILE = "athletics_master.parquet"
+MASTER_FILE = "athletics_master.parquet"  # Filtered data (~96k rows) - fast loading
+FULL_FILE = "athletics_full.parquet"       # Full database (~8.8M rows) - competitor analysis
 STORAGE_ACCOUNT_URL = "https://tilastoptija.blob.core.windows.net/"
 
-# Local SQLite paths (for migration)
+# Local file paths
 LOCAL_SQLITE_PATHS = {
     'deploy': 'SQL/athletics_deploy.db',
     'competitor': 'SQL/athletics_competitor.db',
     'major': 'SQL/major_championships.db',
     'ksa': 'SQL/ksa_athletics.db',
 }
+LOCAL_CSV_FULL = 'Tilastoptja_Data/ksaoutput_full_new.csv'  # Full CSV for migration
 
 # =============================================================================
 
@@ -243,6 +245,45 @@ def load_data() -> pd.DataFrame:
         import streamlit as st
         if df is not None and not df.empty:
             st.session_state['athletics_data_cache'] = df
+    except:
+        pass
+
+    return df if df is not None else pd.DataFrame()
+
+
+def load_full_data() -> pd.DataFrame:
+    """Load FULL athletics database (~8.8M rows) for Competitor Analysis.
+
+    This is a large file - only use for competitor analysis tab.
+    Uses session state caching when available.
+    """
+    # Try Streamlit session state cache first
+    try:
+        import streamlit as st
+        if 'athletics_full_cache' in st.session_state:
+            df = st.session_state['athletics_full_cache']
+            if df is not None and not df.empty:
+                return df
+    except:
+        pass
+
+    # Load from Azure
+    df = None
+    if _use_azure():
+        print("Loading FULL database from Azure Blob Storage...")
+        df = download_parquet(FULL_FILE)
+        if df is not None and not df.empty:
+            print(f"Loaded {len(df):,} rows from Azure (full database)")
+
+    if df is None or df.empty:
+        print("Full database not available in Azure, trying local...")
+        df = _load_local_sqlite('competitor')
+
+    # Cache in session state
+    try:
+        import streamlit as st
+        if df is not None and not df.empty:
+            st.session_state['athletics_full_cache'] = df
     except:
         pass
 

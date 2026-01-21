@@ -12,6 +12,8 @@ import matplotlib  # Required for pandas Styler background_gradient
 from country_codes import COUNTRY_CODES
 # Azure SQL / SQLite database connection module
 from azure_db import query_data, get_connection_mode
+# Full database for competitor analysis (8.8M rows)
+from blob_storage import load_full_data
 from discipline_knowledge import (
     DISCIPLINE_KNOWLEDGE, TOKYO_2025_STANDARDS, LA_2028_STANDARDS,
     EVENT_QUOTAS as DISCIPLINE_QUOTAS, get_event_standard, get_event_quota, get_event_knowledge
@@ -1085,52 +1087,58 @@ def load_data(_cache_version="v8"):  # Change version to force cache refresh
     return df
 
 
-@st.cache_data
+@st.cache_data(ttl=3600)
 def load_competitor_data():
-    """Load competitor analysis data (2024-today) from database (Azure SQL or local SQLite)."""
+    """Load FULL athletics database for competitor analysis.
+
+    Uses Azure Blob Storage (athletics_full.parquet) with ~8.8M rows.
+    Falls back to local competitor DB or main database if not available.
+    """
+    # Try to load full database from Azure Blob Storage
     try:
-        # Try Azure SQL / SQLite via azure_db module
-        df = query_data("SELECT * FROM athletics_data", db_name='competitor')
-        if df.empty:
-            st.warning(f"No data returned from competitor database. Connection mode: {get_connection_mode()}")
-            return load_data()  # Fall back to main database
+        df = load_full_data()
+        if not df.empty:
+            # Apply column transformations if needed
+            if 'firstname' in df.columns and 'Athlete_Name' not in df.columns:
+                df['Athlete_Name'] = (
+                    df['firstname'].fillna('').astype(str) + ' ' +
+                    df['lastname'].fillna('').astype(str)
+                ).str.strip()
+                df['Gender'] = df['gender'].map({'M': 'Men', 'F': 'Women'})
+                df = df.rename(columns={
+                    'competitionid': 'Competition_ID',
+                    'competitionname': 'Competition',
+                    'nationality': 'Athlete_CountryCode',
+                    'eventname': 'Event',
+                    'performance': 'Result',
+                    'competitiondate': 'Start_Date',
+                    'result_numeric': 'Result_numeric',
+                    'year': 'Year',
+                })
+
+            # Clean athlete data
+            df = clean_athlete_data(df)
+            return df
     except Exception as e:
-        # Fallback to direct SQLite connection or main database
-        if get_connection_mode() == 'azure':
-            st.error(f"Azure SQL connection failed: {str(e)}. Attempting local SQLite fallback...")
+        print(f"Failed to load full database: {e}")
 
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        db_path = os.path.join(base_dir, COMPETITOR_DB_FILE)
+    # Fallback: Try local competitor DB
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    db_path = os.path.join(base_dir, COMPETITOR_DB_FILE)
 
-        if not os.path.exists(db_path):
-            # Fall back to main deploy database if competitor DB doesn't exist
-            return load_data()
-
+    if os.path.exists(db_path):
         try:
             conn = sqlite3.connect(db_path)
             df = pd.read_sql("SELECT * FROM athletics_data", conn)
             conn.close()
+            if not df.empty:
+                df = clean_athlete_data(df)
+                return df
         except Exception as e2:
-            st.error(f"SQLite fallback also failed: {str(e2)}. Using main database...")
-            return load_data()
+            print(f"Local competitor DB failed: {e2}")
 
-    # Clean athlete data (deduplicate IDs, normalize names)
-    if not df.empty:
-        df = clean_athlete_data(df)
-
-    # Parse Result_numeric (need to pass event for proper parsing)
-    if 'Result' in df.columns and 'Result_numeric' not in df.columns:
-        if 'Event' in df.columns:
-            df['Result_numeric'] = df.apply(lambda row: parse_result(row['Result'], row['Event']), axis=1)
-        else:
-            # Fallback - parse without event context
-            df['Result_numeric'] = df['Result'].apply(lambda x: parse_result(x, '100m'))
-
-    # Add Year column
-    if 'Start_Date' in df.columns and 'Year' not in df.columns:
-        df['Year'] = pd.to_datetime(df['Start_Date'], errors='coerce').dt.year
-
-    return df
+    # Final fallback: Use main database
+    return load_data()
 
 
 # Load data at startup
@@ -1260,15 +1268,54 @@ def show_single_athlete_profile(profile, db_label):
                     else:
                         st.metric("Trend", "N/A")
 
-                # WA Points by Event
+                # WA Points by Event - only show events with valid WA points
                 if 'Event' in last_3_years.columns:
-                    st.markdown("**WA Points by Event:**")
-                    wa_by_event = last_3_years.groupby('Event').agg({
-                        'wapoints': ['mean', 'max', 'count']
-                    }).round(0)
-                    wa_by_event.columns = ['Avg Points', 'Best Points', 'Count']
-                    wa_by_event = wa_by_event.sort_values('Best Points', ascending=False)
-                    st.dataframe(style_dark_df(ensure_json_safe(wa_by_event.reset_index())), height=150)
+                    # Filter to only rows with valid (non-zero, non-NaN) WA points
+                    wa_valid = last_3_years[last_3_years['wapoints'].notna() & (last_3_years['wapoints'] > 0)]
+                    if not wa_valid.empty:
+                        st.markdown("**WA Points by Event:**")
+                        wa_by_event = wa_valid.groupby('Event').agg({
+                            'wapoints': ['mean', 'max', 'count']
+                        }).round(0)
+                        wa_by_event.columns = ['Avg Points', 'Best Points', 'Count']
+                        wa_by_event = wa_by_event.sort_values('Best Points', ascending=False)
+                        st.dataframe(style_dark_df(ensure_json_safe(wa_by_event.reset_index())), height=150)
+
+                    # Top 5 WA Points Performances with date filter
+                    st.markdown("**Top WA Points Performances:**")
+                    col_date1, col_date2 = st.columns(2)
+                    with col_date1:
+                        wa_date_start = st.date_input(
+                            "From",
+                            value=datetime.datetime.now() - datetime.timedelta(days=365),
+                            key="wa_date_start_profile"
+                        )
+                    with col_date2:
+                        wa_date_end = st.date_input(
+                            "To",
+                            value=datetime.datetime.now(),
+                            key="wa_date_end_profile"
+                        )
+
+                    # Filter by date and get top 5 WA points performances
+                    wa_filtered = last_3_years.copy()
+                    if 'Start_Date' in wa_filtered.columns:
+                        wa_filtered['Start_Date'] = pd.to_datetime(wa_filtered['Start_Date'], errors='coerce')
+                        wa_filtered = wa_filtered[
+                            (wa_filtered['Start_Date'] >= pd.Timestamp(wa_date_start)) &
+                            (wa_filtered['Start_Date'] <= pd.Timestamp(wa_date_end))
+                        ]
+                    wa_filtered = wa_filtered[wa_filtered['wapoints'].notna() & (wa_filtered['wapoints'] > 0)]
+                    wa_filtered = wa_filtered.sort_values('wapoints', ascending=False).head(5)
+
+                    if not wa_filtered.empty:
+                        top_wa_cols = ['Event', 'Result', 'wapoints', 'Competition', 'Start_Date']
+                        top_wa_cols = [c for c in top_wa_cols if c in wa_filtered.columns]
+                        top_wa_display = wa_filtered[top_wa_cols].copy()
+                        top_wa_display.columns = ['Event', 'Result', 'WA Points', 'Competition', 'Date'][:len(top_wa_cols)]
+                        st.dataframe(style_dark_df(ensure_json_safe(top_wa_display)), height=200)
+                    else:
+                        st.info("No WA Points performances in selected date range.")
             else:
                 st.info("No WA Points data available for this athlete.")
         else:
@@ -1645,7 +1692,7 @@ def show_qualification_stage(df):
 
     if 'Athlete_Country' in df.columns:
         df['Country_Flag'] = df['Athlete_Country'].apply(get_flag)
-        df['Athlete_Country'] = df['Country_Flag'] + ' ' + df['Athlete_Country']
+        df['Athlete_Country'] = df['Country_Flag'].astype(str) + ' ' + df['Athlete_Country'].astype(str)
 
     def remove_outliers(df_inner, field='Result_numeric'):
         q1 = df_inner[field].quantile(0.25)
@@ -1808,7 +1855,7 @@ def show_final_performances(df):
     df['Medal'] = df['Position'].apply(medal_emoji)
     if 'Athlete_Country' in df.columns:
         df['Country_Flag'] = df['Athlete_Country'].apply(get_flag)
-        df['Athlete_Country'] = df['Country_Flag'] + ' ' + df['Athlete_Country']
+        df['Athlete_Country'] = df['Country_Flag'].astype(str) + ' ' + df['Athlete_Country'].astype(str)
     final_12 = df[df['Position'].between(1, 12, inclusive='both')].copy()
     st.write("Final round preview (before year conversion):", 
              final_12[['Event', 'Start_Date', 'Result', 'Result_numeric']].head(10))
@@ -1935,10 +1982,12 @@ def show_relay_charts(df):
             relay_df = relay_df[relay_df['Gender'] == chosen_gender]
 
     with col2:
+        # Default to 4x100m and 4x400m only (exclude mixed relay)
+        default_relays = [e for e in relay_events_master if e in ('4x100m Relay', '4x400m Relay')]
         chosen_events = st.multiselect(
             "Relay Events",
             relay_events_master,
-            default=relay_events_master,
+            default=default_relays if default_relays else relay_events_master[:2],
             key="relay_event_filter"
         )
         chosen_events_normalized = [e.lower() for e in chosen_events]
@@ -6470,16 +6519,21 @@ def show_detailed_report(df_all):
             if 'Event' in athlete_df.columns and 'Result_numeric' in athlete_df.columns:
                 for event in athlete_df['Event'].unique():
                     event_df = athlete_df[athlete_df['Event'] == event]
+                    # Filter to valid numeric results
+                    event_df_valid = event_df[event_df['Result_numeric'].notna()]
+                    if event_df_valid.empty:
+                        continue
+
                     event_clean = event.strip().replace("Indoor", "").strip()
                     ev_type = event_type_map.get(event, event_type_map.get(event_clean, 'time'))
 
                     if ev_type == 'time':
-                        best_val = event_df['Result_numeric'].min()
+                        best_idx = event_df_valid['Result_numeric'].idxmin()
                     else:
-                        best_val = event_df['Result_numeric'].max()
+                        best_idx = event_df_valid['Result_numeric'].idxmax()
 
-                    best_row = event_df[event_df['Result_numeric'] == best_val].iloc[0]
-                    result_str = best_row.get('Result', str(best_val))
+                    best_row = event_df_valid.loc[best_idx]
+                    result_str = best_row.get('Result', str(best_row['Result_numeric']))
                     report_lines.append(f"  {event}: {result_str}")
 
             report_lines.append("\nSEASON SUMMARY:")
