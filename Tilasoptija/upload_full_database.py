@@ -21,8 +21,9 @@ except:
 
 from blob_storage import upload_parquet, FULL_FILE, _use_azure, get_container_client
 
-# Source CSV
-CSV_PATH = 'Tilastoptja_Data/ksaoutput_full_new.csv'
+# Source CSV - use original full file (13M rows, complete)
+# Note: ksaoutput_full_new.csv is corrupted/truncated
+CSV_PATH = 'Tilastoptja_Data/ksaoutput_full.csv'
 
 
 def _upload_parquet_file(file_path: str, blob_name: str) -> bool:
