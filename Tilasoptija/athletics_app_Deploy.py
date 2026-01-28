@@ -9,6 +9,9 @@ import base64
 import datetime
 import math
 import matplotlib  # Required for pandas Styler background_gradient
+
+# Logo path - works both locally and on Streamlit Cloud
+LOGO_PATH = "Tilasoptija/Saudilogo.png" if os.path.exists("Tilasoptija/Saudilogo.png") else "Saudilogo.png"
 from country_codes import COUNTRY_CODES
 # Azure SQL / SQLite database connection module
 from azure_db import query_data, get_connection_mode
@@ -145,7 +148,7 @@ MAJOR_COMPETITIONS_CID = {
 ###################################
 st.set_page_config(
     page_title="Saudi Athletics - Performance Analysis",
-    page_icon="Saudilogo.png",
+    page_icon=LOGO_PATH,
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -6602,7 +6605,7 @@ def main():
     # Sidebar with Saudi branding and view mode toggle
     with st.sidebar:
         # Saudi Logo and Title
-        st.image("Saudilogo.png", width=120)
+        st.image(LOGO_PATH, width=120)
         st.markdown("## Saudi Athletics")
         st.markdown("*Performance Analysis Platform*")
         st.markdown("---")
