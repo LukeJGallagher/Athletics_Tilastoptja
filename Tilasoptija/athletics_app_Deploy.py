@@ -5842,8 +5842,32 @@ def get_event_coaching_notes(event, event_type):
 def show_competitor_analysis(df_all):
     """Championship Competitor Analysis - Focus on a single athlete vs competitors."""
 
-    # Load competitor-specific data (2024-today) for better performance
-    df_competitor = load_competitor_data()
+    # Load competitor-specific data with progress indicator
+    if 'competitor_data' not in st.session_state or st.session_state.get('competitor_data') is None:
+        progress_container = st.empty()
+        with progress_container.container():
+            st.markdown("""
+            <div style="background: linear-gradient(135deg, #007167 0%, #005a51 100%);
+                 padding: 1.5rem; border-radius: 8px; text-align: center;">
+                <h3 style="color: white; margin: 0;">Loading Full Database</h3>
+                <p style="color: rgba(255,255,255,0.8); margin: 0.5rem 0 0 0;">
+                    13M rows from Azure Blob Storage - first load takes ~30-60 seconds
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+            progress_bar = st.progress(0, text="Connecting to Azure...")
+            import time
+            start_time = time.time()
+            progress_bar.progress(10, text="Downloading from Azure Blob Storage...")
+            df_competitor = load_competitor_data()
+            progress_bar.progress(70, text="Processing columns...")
+            elapsed = time.time() - start_time
+            progress_bar.progress(90, text=f"Finalizing... ({elapsed:.0f}s)")
+            st.session_state['competitor_data'] = df_competitor
+            progress_bar.progress(100, text=f"Loaded {len(df_competitor):,} rows in {elapsed:.0f}s")
+            time.sleep(1)
+        progress_container.empty()
+    df_competitor = st.session_state.get('competitor_data', pd.DataFrame())
 
     # Custom CSS for maroon/burgundy theme matching screenshot
     st.markdown("""
