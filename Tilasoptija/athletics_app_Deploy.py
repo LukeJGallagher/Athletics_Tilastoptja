@@ -3435,6 +3435,9 @@ def show_road_to_championship(df_all, championship_type, target_year, target_cit
 
     st.markdown("---")
 
+    # Event type used across all tabs
+    event_type = get_event_type(selected_event)
+
     # === SUB-TABS FOR DIFFERENT ANALYSES ===
     # Show Qualification Points tab for Olympics and World Championships (WA Points system)
     # Asian Games uses area-based quotas, not WA Points
