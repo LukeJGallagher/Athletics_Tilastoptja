@@ -46,15 +46,15 @@ if not OPENROUTER_API_KEY:
     except Exception:
         pass
 
-# Free models available on OpenRouter
+# Free models available on OpenRouter (updated Feb 2026)
 AVAILABLE_MODELS = {
-    "Llama 4 Maverick (Recommended)": "meta-llama/llama-4-maverick-17b-128e-instruct:free",
-    "Gemma 3 27B": "google/gemma-3-27b-it:free",
-    "Mistral Small 3.1": "mistralai/mistral-small-3.1-24b-instruct:free",
-    "Llama 3.1 8B": "meta-llama/llama-3.1-8b-instruct:free",
+    "Free Router (Recommended)": "openrouter/free",
+    "StepFun Step 3.5 Flash": "stepfun/step-3.5-flash:free",
+    "NVIDIA Nemotron 30B": "nvidia/nemotron-3-nano-30b-a3b:free",
+    "Trinity Mini 26B": "arcee-ai/trinity-mini:free",
 }
 
-DEFAULT_MODEL = "meta-llama/llama-4-maverick-17b-128e-instruct:free"
+DEFAULT_MODEL = "openrouter/free"
 
 # Max chat history to send (manage token usage)
 MAX_HISTORY = 10
