@@ -97,13 +97,15 @@ IMPORTANT RULES:
 3. SQL must be READ-ONLY (SELECT only). Never use INSERT, UPDATE, DELETE, DROP, ALTER, CREATE.
 4. For time events (running, hurdles, relays, race walks): LOWER performance values are BETTER.
 5. For field events (jumps, throws) and combined events: HIGHER values are BETTER.
-6. The `performance` column is TEXT (e.g., "10.23", "1:45.67", "8.15"). Use `result_numeric` (REAL) for numeric comparisons and sorting.
-7. Country codes are 3-letter (e.g., 'KSA' for Saudi Arabia, 'USA', 'JPN').
-8. Gender is 'M' or 'F'.
-9. When asked about Saudi/KSA athletes, filter by nationality = 'KSA'.
-10. Always include an explanation in plain English that a coach would understand.
-11. Suggest 2-3 relevant follow-up questions.
-12. For chart_code, write valid Python using plotly.express (px) or plotly.graph_objects (go). The query result DataFrame is available as variable `df`. Always set template='plotly_dark'.
+6. The `Result` column is TEXT (e.g., "10.23", "1:45.67", "8.15"). Use `result_numeric` (REAL) for numeric comparisons and sorting.
+7. Country codes: use `Athlete_CountryCode` (e.g., 'KSA' for Saudi Arabia, 'USA', 'JPN'). NOT nationality.
+8. Gender: use `Gender` column with values 'Men' or 'Women'. NOT 'M'/'F'.
+9. When asked about Saudi/KSA athletes, filter by `Athlete_CountryCode = 'KSA'`.
+10. Event names: use `Event` column (e.g., '100m', 'Long Jump'). NOT eventname.
+11. Competition name: use `Competition`. Date: use `Start_Date`. Athlete name: use `Athlete_Name`.
+12. Always include an explanation in plain English that a coach would understand.
+13. Suggest 2-3 relevant follow-up questions.
+14. For chart_code, write valid Python using plotly.express (px) or plotly.graph_objects (go). The query result DataFrame is available as variable `df`. Always set template='plotly_dark'.
 
 RESPONSE FORMAT - You MUST return valid JSON with exactly these fields:
 ```json

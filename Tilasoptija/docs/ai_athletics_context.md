@@ -8,103 +8,57 @@ Comprehensive reference for the athletics coaching chatbot. This document contai
 
 ### Table Name: `athletics_data`
 
-The data originates from Tilastopaja (Finnish athletics statistics service) and is stored as a semicolon-delimited CSV, then loaded into SQLite/Parquet databases. The table is queried via DuckDB in production.
+IMPORTANT: You MUST use ONLY these column names in SQL queries. The data has been pre-processed and columns renamed from the raw CSV format.
 
-### Raw CSV Columns (Tilastopaja Format)
-
-| # | CSV Column | Type | Description | Example |
-|---|-----------|------|-------------|---------|
-| 1 | `auto` | INTEGER | Auto-increment row ID | 1, 2, 3 |
-| 2 | `gender` | TEXT | Athlete gender | `M`, `F` |
-| 3 | `resultid` | INTEGER | Unique result identifier | 136536341 |
-| 4 | `athleteid` | INTEGER | Unique athlete identifier | 905357 |
-| 5 | `firstname` | TEXT | Athlete first name | Andrea |
-| 6 | `lastname` | TEXT | Athlete last name | Di Battista |
-| 7 | `DOB` | TEXT | Date of birth (YYYY-MM-DD) | 2007-01-16 |
-| 8 | `height` | TEXT | Athlete height (often empty) | |
-| 9 | `weight` | TEXT | Athlete weight (often empty) | |
-| 10 | `yearofbirth` | INTEGER | Birth year | 2007 |
-| 11 | `nationality` | TEXT | 3-letter country code (WA format) | ITA, KSA, USA |
-| 12 | `secondnationality` | TEXT | Second nationality (if applicable) | |
-| 13 | `competitiondate` | TEXT | Competition date (YYYY-MM-DD) | 2024-05-11 |
-| 14 | `competitionid` | INTEGER | Unique competition identifier | 13105379 |
-| 15 | `competitionname` | TEXT | Full competition name | CDS Allievi PUGLIA/BASILICATA |
-| 16 | `competitionvenue` | TEXT | Venue city | Molfetta |
-| 17 | `team` | TEXT | Team name (for relays) | |
-| 18 | `competitioncountry` | TEXT | Country where competition held | ITA |
-| 19 | `eventname` | TEXT | Event name | 100m, Long Jump, 4x400m Relay |
-| 20 | `eventcode` | TEXT | Event code number | 100 |
-| 21 | `round` | TEXT | Competition round | rB, f, sf, h1, h2 |
-| 22 | `position` | TEXT | Finishing position | 1, 2, 3 |
-| 23 | `performance` | TEXT | Raw result string | 10.91, 2:05.34, 8.27 |
-| 24 | `performancestring` | TEXT | Display-formatted result | 10.91 |
-| 25 | `terrain` | TEXT | Indoor/Outdoor | Outdoor, Indoor |
-| 26 | `timing` | TEXT | Timing method | (often empty for FAT) |
-| 27 | `wind` | TEXT | Wind reading (m/s) | 2.6, -0.3, 0.0 |
-| 28 | `windlegal` | TEXT | Wind legality status | Wind Assisted, Wind Legal |
-| 29 | `notes` | TEXT | Additional notes | |
-| 30 | `flags` | TEXT | Result flags | |
-| 31 | `created` | TEXT | Record creation date | 2025-05-27 |
-| 32 | `lastupdated` | TEXT | Last update date | |
-| 33 | `wapoints` | INTEGER | World Athletics points score | 913, 1105, 0 |
-| 34 | `PB` | TEXT | Personal Best indicator | PB or empty |
-| 35 | `SB` | TEXT | Season Best indicator | SB or empty |
-| 36 | `combinedseries` | TEXT | Combined event series data | |
-| 37 | `leg1` | TEXT | Relay leg 1 athlete | |
-| 38 | `leg2` | TEXT | Relay leg 2 athlete | |
-| 39 | `leg3` | TEXT | Relay leg 3 athlete | |
-| 40 | `leg4` | TEXT | Relay leg 4 athlete | |
-
-### Database Columns (After Processing by rebuild_all_data.py)
-
-The build script retains these columns and adds pre-computed derived columns:
+### Column Reference (USE THESE EXACT NAMES)
 
 | Column | Type | Description | Example |
 |--------|------|-------------|---------|
-| `auto` | INTEGER | Row ID | 1 |
-| `gender` | TEXT | `M` or `F` | M |
-| `athleteid` | TEXT | Normalized athlete ID (no .0 suffix) | 905357 |
-| `firstname` | TEXT | First name | Mohammed |
-| `lastname` | TEXT | Last name | Al-Jadani |
-| `DOB` | TEXT | Date of birth | 1999-03-15 |
-| `yearofbirth` | INTEGER | Birth year | 1999 |
-| `nationality` | TEXT | 3-letter WA country code | KSA |
-| `competitiondate` | TEXT | Date string (YYYY-MM-DD) | 2024-08-05 |
-| `competitionid` | TEXT | Competition ID (string, no .0) | 13079218 |
-| `competitionname` | TEXT | Full competition name | 33rd Olympic Games |
-| `competitionvenue` | TEXT | Venue city | Paris |
-| `competitioncountry` | TEXT | Host country code | FRA |
-| `eventname` | TEXT | Event name | 400m Hurdles |
-| `eventcode` | TEXT | Event code | 400H |
-| `round` | TEXT | Raw round value | f, sf, h1 |
-| `round_normalized` | TEXT | **Pre-computed**: Standardized round | Final, Semi Finals, Heats |
-| `position` | TEXT | Finishing position | 1 |
-| `performance` | TEXT | Raw result string | 46.78 |
-| `result_numeric` | REAL | **Pre-computed**: Numeric result for sorting | 46.78 |
-| `year` | INTEGER | **Pre-computed**: Year from competitiondate | 2024 |
-| `terrain` | TEXT | Indoor or Outdoor | Outdoor |
-| `timing` | TEXT | Timing method | |
-| `wind` | TEXT | Wind speed (m/s) | 0.3 |
-| `windlegal` | TEXT | Wind legality | Wind Legal |
-| `wapoints` | REAL | WA Points (numeric) | 1105.0 |
-| `PB` | TEXT | Personal Best flag | PB |
-| `SB` | TEXT | Season Best flag | SB |
-| `agegroup` | TEXT | Age group category | Senior, U20 |
+| `Athlete_Name` | TEXT | Full name (first + last) | Moukhled Al-Outaibi |
+| `firstname` | TEXT | First name only | Moukhled |
+| `lastname` | TEXT | Last name only | Al-Outaibi |
+| `Athlete_ID` | TEXT | Unique athlete identifier | 32072 |
+| `Athlete_CountryCode` | TEXT | 3-letter WA country code | KSA, USA, JPN |
+| `Athlete_Country` | TEXT | Full country name | Saudi Arabia |
+| `Gender` | TEXT | **Men** or **Women** (NOT M/F) | Men |
+| `gender` | TEXT | Original M/F value | M |
+| `Event` | TEXT | Event name | 100m, Long Jump, 4x400m Relay |
+| `eventcode` | TEXT | Event code number | 100, LJ, 400H |
+| `Result` | TEXT | Raw result string | 10.23, 1:45.67, 8.15 |
+| `result_numeric` | REAL | Numeric result for sorting/comparison | 10.23, 105.67, 8.15 |
+| `Competition` | TEXT | Full competition name | 33rd Olympic Games |
+| `Competition_ID` | TEXT | Unique competition identifier | 13079218 |
+| `Start_Date` | TEXT | Competition date (YYYY-MM-DD) | 2024-08-05 |
+| `year` | INTEGER | Year extracted from date | 2024 |
+| `Venue` | TEXT | Venue city | Paris |
+| `Venue_CountryCode` | TEXT | Host country code | FRA |
+| `Venue_Country` | TEXT | Full host country name | France |
+| `Round` | TEXT | Round name (readable) | Final, Heat 1, Semi 2 |
+| `round_normalized` | TEXT | Standardized round | Final, Semi Finals, Heats |
+| `Position` | TEXT | Finishing position | 1, 2, 3 |
+| `terrain` | TEXT | Indoor or Outdoor | Outdoor, Indoor |
+| `timing` | TEXT | Timing method (often empty for FAT) | |
+| `wind` | TEXT | Wind speed (m/s) | 2.6, -0.3 |
+| `windlegal` | TEXT | Wind legality | Wind Assisted, Wind Legal |
+| `wapoints` | REAL | World Athletics points score | 1105.0, 913.0 |
+| `PB` | TEXT | Personal Best flag | PB or empty |
+| `SB` | TEXT | Season Best flag | SB or empty |
+| `Personal_Best` | TEXT | Same as PB (renamed) | PB or empty |
+| `Date_of_Birth` | TEXT | Date of birth (YYYY-MM-DD) | 1999-03-15 |
+| `yearofbirth` | TEXT | Birth year | 1999 |
+| `agegroup` | TEXT | Age group | Sen, U20, U18 |
+| `Row_id` | TEXT | Auto-increment row ID | 23921 |
 
-### CSV to Dashboard Column Mapping
+### CRITICAL Column Name Rules
 
-| CSV Column | Dashboard Column | Notes |
-|------------|-----------------|-------|
-| `firstname` + `lastname` | `Athlete_Name` | Combined for display |
-| `gender` (M/F) | `Gender` (Men/Women) | Mapped to full words |
-| `nationality` | `Athlete_CountryCode` | 3-letter codes |
-| `eventname` | `Event` | Direct mapping |
-| `performance` | `Result` | Raw string |
-| `result_numeric` | `Result_numeric` | Pre-computed float |
-| `competitionid` | `Competition_ID` | String format |
-| `competitiondate` | `Start_Date` | YYYY-MM-DD |
-| `wapoints` | `wapoints` | Numeric WA Points |
-| `round` | `Round` | Mapped to readable: h1 -> Heat 1 |
+- Country filtering: Use `Athlete_CountryCode` (NOT nationality)
+- Event filtering: Use `Event` (NOT eventname)
+- Result text: Use `Result` (NOT performance)
+- Gender filtering: Use `Gender` with values **'Men'** or **'Women'** (NOT 'M'/'F')
+- Numeric sorting: Use `result_numeric` (REAL type, for comparisons)
+- Competition name: Use `Competition` (NOT competitionname)
+- Competition date: Use `Start_Date` (NOT competitiondate)
+- Athlete name: Use `Athlete_Name` (or `firstname`/`lastname` separately)
 
 ---
 
@@ -970,35 +924,38 @@ Note: "-" means that round does not apply for field events (no semi-finals in fi
 
 | Column | Type | Notes |
 |--------|------|-------|
-| `nationality` | TEXT | Always use 3-letter codes: `'KSA'`, `'USA'`, `'QAT'` |
-| `gender` | TEXT | Always `'M'` or `'F'` (not 'Men'/'Women') |
-| `eventname` | TEXT | Exact match: `'100m'`, `'Long Jump'`, `'4x400m Relay'` |
-| `competitionid` | TEXT | String format (no .0): `'13079218'` |
-| `competitiondate` | TEXT | String format `'YYYY-MM-DD'` |
+| `Athlete_CountryCode` | TEXT | 3-letter codes: `'KSA'`, `'USA'`, `'QAT'` |
+| `Gender` | TEXT | Always `'Men'` or `'Women'` (NOT 'M'/'F') |
+| `Event` | TEXT | Exact match: `'100m'`, `'Long Jump'`, `'4x400m Relay'` |
+| `Competition_ID` | TEXT | String format: `'13079218'` |
+| `Start_Date` | TEXT | String format `'YYYY-MM-DD'` |
 | `result_numeric` | REAL | Pre-computed numeric. NULL for DNS/DNF/DQ/NM |
 | `wapoints` | REAL | Numeric. Can use AVG(), MAX(), MIN() |
-| `round` | TEXT | Raw: `'f'`, `'sf'`, `'h1'` |
+| `Round` | TEXT | Readable: `'Final'`, `'Heat 1'`, `'Semi 2'` |
 | `round_normalized` | TEXT | Standardized: `'Final'`, `'Semi Finals'`, `'Heats'` |
-| `year` | INTEGER | Pre-computed from competitiondate |
-| `position` | TEXT | Finishing position as string (cast to INT for sorting) |
+| `year` | INTEGER | Pre-computed from Start_Date |
+| `Position` | TEXT | Finishing position as string (cast to INT for sorting) |
 | `PB` | TEXT | Contains `'PB'` or empty |
 | `SB` | TEXT | Contains `'SB'` or empty |
-| `firstname` | TEXT | Athlete first name |
-| `lastname` | TEXT | Athlete last name |
-| `athleteid` | TEXT | Normalized athlete identifier |
+| `Athlete_Name` | TEXT | Full name (firstname + lastname) |
+| `firstname` | TEXT | First name only |
+| `lastname` | TEXT | Last name only |
+| `Athlete_ID` | TEXT | Unique athlete identifier |
+| `Competition` | TEXT | Full competition name |
+| `Result` | TEXT | Raw result string |
 
 ### Important Query Patterns
 
-1. **Always use single quotes** for string values: `WHERE nationality = 'KSA'`
+1. **Always use single quotes** for string values: `WHERE Athlete_CountryCode = 'KSA'`
 2. **Time comparisons**: Lower `result_numeric` = faster = better. Use `MIN()` for best time, `ORDER BY result_numeric ASC` for fastest first.
 3. **Distance comparisons**: Higher `result_numeric` = further = better. Use `MAX()` for best distance, `ORDER BY result_numeric DESC` for longest first.
 4. **Filter NULL results**: Always add `AND result_numeric IS NOT NULL` to exclude DNS/DNF/DQ/NM.
-5. **Use LIKE for partial event matching**: `WHERE eventname LIKE '%Hurdles%'` matches all hurdle variants.
-6. **Date filtering**: `WHERE competitiondate >= '2024-01-01'` or `WHERE year >= 2024`.
+5. **Use LIKE for partial event matching**: `WHERE Event LIKE '%Hurdles%'` matches all hurdle variants.
+6. **Date filtering**: `WHERE Start_Date >= '2024-01-01'` or `WHERE year >= 2024`.
 7. **Round filtering**: Use `round_normalized` for clean filtering: `WHERE round_normalized = 'Final'`.
-8. **Combining name**: `firstname || ' ' || lastname AS athlete_name`.
+8. **Athlete name**: Use `Athlete_Name` directly (already combined). Or `firstname`, `lastname` separately.
 9. **WA Points aggregation**: `AVG(wapoints)`, `MAX(wapoints)` work directly on the numeric column.
-10. **Cast position for sorting**: `CAST(position AS INTEGER)` when ordering by finish place.
+10. **Cast position for sorting**: `CAST(Position AS INTEGER)` when ordering by finish place.
 
 ### Performance Time Storage
 
@@ -1020,23 +977,22 @@ To display times from `result_numeric`:
 
 **Q: Show me all results for Mohammed Al-Jadani**
 ```sql
-SELECT firstname, lastname, eventname, performance, result_numeric,
-       competitionname, competitiondate, wapoints
+SELECT Athlete_Name, Event, Result, result_numeric,
+       Competition, Start_Date, wapoints
 FROM athletics_data
-WHERE firstname LIKE '%Mohammed%' AND lastname LIKE '%Jadani%'
+WHERE Athlete_Name LIKE '%Mohammed%Jadani%'
   AND result_numeric IS NOT NULL
-ORDER BY competitiondate DESC
+ORDER BY Start_Date DESC
 ```
 
 **Q: What are the best 100m times by KSA athletes?**
 ```sql
-SELECT firstname || ' ' || lastname AS athlete_name,
-       performance, result_numeric, competitionname,
-       competitiondate, wind, wapoints
+SELECT Athlete_Name, Result, result_numeric, Competition,
+       Start_Date, wind, wapoints
 FROM athletics_data
-WHERE nationality = 'KSA'
-  AND eventname = '100m'
-  AND gender = 'M'
+WHERE Athlete_CountryCode = 'KSA'
+  AND Event = '100m'
+  AND Gender = 'Men'
   AND result_numeric IS NOT NULL
 ORDER BY result_numeric ASC
 LIMIT 20
@@ -1046,69 +1002,68 @@ LIMIT 20
 
 **Q: Compare the top 400m Hurdles athletes from Qatar and Saudi Arabia**
 ```sql
-SELECT nationality, firstname || ' ' || lastname AS athlete_name,
+SELECT Athlete_CountryCode, Athlete_Name,
        MIN(result_numeric) AS personal_best,
        AVG(result_numeric) AS average_performance,
        MAX(wapoints) AS best_wapoints,
        COUNT(*) AS total_races
 FROM athletics_data
-WHERE eventname = '400m Hurdles'
-  AND gender = 'M'
-  AND nationality IN ('KSA', 'QAT')
+WHERE Event = '400m Hurdles'
+  AND Gender = 'Men'
+  AND Athlete_CountryCode IN ('KSA', 'QAT')
   AND result_numeric IS NOT NULL
-GROUP BY nationality, athleteid, firstname, lastname
+GROUP BY Athlete_CountryCode, Athlete_ID, Athlete_Name
 ORDER BY personal_best ASC
 ```
 
 **Q: Head-to-head: Two specific athletes in the same competitions**
 ```sql
-SELECT a.competitionname, a.competitiondate,
-       a.firstname || ' ' || a.lastname AS athlete_a,
-       a.performance AS result_a, a.result_numeric AS numeric_a,
-       b.firstname || ' ' || b.lastname AS athlete_b,
-       b.performance AS result_b, b.result_numeric AS numeric_b
+SELECT a.Competition, a.Start_Date,
+       a.Athlete_Name AS athlete_a,
+       a.Result AS result_a, a.result_numeric AS numeric_a,
+       b.Athlete_Name AS athlete_b,
+       b.Result AS result_b, b.result_numeric AS numeric_b
 FROM athletics_data a
 JOIN athletics_data b
-  ON a.competitionid = b.competitionid
-  AND a.eventname = b.eventname
-  AND a.round = b.round
-WHERE a.athleteid = '147939'
-  AND b.athleteid = '652065'
+  ON a.Competition_ID = b.Competition_ID
+  AND a.Event = b.Event
+  AND a.Round = b.Round
+WHERE a.Athlete_ID = '147939'
+  AND b.Athlete_ID = '652065'
   AND a.result_numeric IS NOT NULL
   AND b.result_numeric IS NOT NULL
-ORDER BY a.competitiondate DESC
+ORDER BY a.Start_Date DESC
 ```
 
 ### Championship Analysis
 
 **Q: Who were the 100m finalists at the Paris 2024 Olympics?**
 ```sql
-SELECT CAST(position AS INTEGER) AS place,
-       firstname || ' ' || lastname AS athlete_name,
-       nationality, performance, result_numeric, wapoints
+SELECT CAST(Position AS INTEGER) AS place,
+       Athlete_Name, Athlete_CountryCode, Result, result_numeric, wapoints
 FROM athletics_data
-WHERE competitionid = '13079218'
-  AND eventname = '100m'
-  AND gender = 'M'
+WHERE Competition_ID = '13079218'
+  AND Event = '100m'
+  AND Gender = 'Men'
   AND round_normalized = 'Final'
   AND result_numeric IS NOT NULL
-ORDER BY CAST(position AS INTEGER) ASC
+ORDER BY CAST(Position AS INTEGER) ASC
 ```
 
 **Q: How have 400m medal-winning times trended at World Championships?**
 ```sql
-SELECT competitionname, year,
+SELECT Competition, year,
        MIN(result_numeric) AS gold_time,
        AVG(result_numeric) AS avg_medal_time
 FROM athletics_data
-WHERE competitionid IN ('13046619','13002354','12935526','12898707','12844203',
+WHERE Competition_ID IN ('13046619','13002354','12935526','12898707','12844203',
                         '12814135','12789100','10626603','8906660','7993620')
-  AND eventname = '400m'
-  AND gender = 'M'
+  AND Event = '400m'
+  AND Gender = 'Men'
   AND round_normalized = 'Final'
-  AND CAST(position AS INTEGER) <= 3
+  AND CAST(Position AS INTEGER) <= 3
   AND result_numeric IS NOT NULL
-GROUP BY competitionid, competitionname, year
+GROUP BY Competition_ID, Competition, year
 ORDER BY year ASC
 ```
 
@@ -1116,25 +1071,24 @@ ORDER BY year ASC
 
 **Q: What are the all-time best performances in the men's Long Jump?**
 ```sql
-SELECT firstname || ' ' || lastname AS athlete_name,
-       nationality, MIN(result_numeric) AS pb,
+SELECT Athlete_Name, Athlete_CountryCode,
+       MAX(result_numeric) AS pb,
        MAX(wapoints) AS best_points
 FROM athletics_data
-WHERE eventname = 'Long Jump'
-  AND gender = 'M'
+WHERE Event = 'Long Jump'
+  AND Gender = 'Men'
   AND result_numeric IS NOT NULL
-GROUP BY athleteid, firstname, lastname, nationality
+GROUP BY Athlete_ID, Athlete_Name, Athlete_CountryCode
 ORDER BY pb DESC
 LIMIT 50
 ```
 
 **Q: Which KSA athletes achieved a personal best (PB) in 2024?**
 ```sql
-SELECT firstname || ' ' || lastname AS athlete_name,
-       eventname, performance, result_numeric, wapoints,
-       competitionname, competitiondate
+SELECT Athlete_Name, Event, Result, result_numeric, wapoints,
+       Competition, Start_Date
 FROM athletics_data
-WHERE nationality = 'KSA'
+WHERE Athlete_CountryCode = 'KSA'
   AND year = 2024
   AND PB = 'PB'
   AND result_numeric IS NOT NULL
@@ -1145,16 +1099,16 @@ ORDER BY wapoints DESC
 
 **Q: What performances are needed to make the 200m final at World Championships?**
 ```sql
-SELECT competitionname, year, round_normalized,
+SELECT Competition, year, round_normalized,
        MIN(result_numeric) AS fastest,
        AVG(result_numeric) AS average,
        MAX(result_numeric) AS slowest_qualifier
 FROM athletics_data
-WHERE competitionid IN ('13046619','13002354','12935526','12898707','12844203')
-  AND eventname = '200m'
-  AND gender = 'M'
+WHERE Competition_ID IN ('13046619','13002354','12935526','12898707','12844203')
+  AND Event = '200m'
+  AND Gender = 'Men'
   AND result_numeric IS NOT NULL
-GROUP BY competitionid, competitionname, year, round_normalized
+GROUP BY Competition_ID, Competition, year, round_normalized
 ORDER BY year DESC,
   CASE round_normalized
     WHEN 'Final' THEN 1
@@ -1177,8 +1131,8 @@ SELECT
   COUNT(*) AS count,
   ROUND(AVG(result_numeric), 2) AS avg_distance
 FROM athletics_data
-WHERE eventname = 'Shot Put'
-  AND gender = 'M'
+WHERE Event = 'Shot Put'
+  AND Gender = 'Men'
   AND wapoints IS NOT NULL
   AND wapoints > 0
   AND result_numeric IS NOT NULL
@@ -1190,95 +1144,95 @@ ORDER BY MIN(wapoints) DESC
 
 **Q: How many KSA athletes competed at each Asian Games?**
 ```sql
-SELECT competitionname, competitiondate,
-       COUNT(DISTINCT athleteid) AS ksa_athletes,
-       COUNT(DISTINCT eventname) AS events_entered,
+SELECT Competition, Start_Date,
+       COUNT(DISTINCT Athlete_ID) AS ksa_athletes,
+       COUNT(DISTINCT Event) AS events_entered,
        COUNT(*) AS total_results
 FROM athletics_data
-WHERE nationality = 'KSA'
-  AND competitionid IN ('13048549', '12911586', '12854365')
-GROUP BY competitionid, competitionname, competitiondate
-ORDER BY competitiondate DESC
+WHERE Athlete_CountryCode = 'KSA'
+  AND Competition_ID IN ('13048549', '12911586', '12854365')
+GROUP BY Competition_ID, Competition, Start_Date
+ORDER BY Start_Date DESC
 ```
 
 **Q: KSA season best performances for 2025**
 ```sql
-SELECT eventname, gender,
-       firstname || ' ' || lastname AS athlete_name,
-       MIN(CASE WHEN eventname IN ('High Jump','Pole Vault','Long Jump','Triple Jump',
+SELECT Event, Gender,
+       Athlete_Name,
+       MIN(CASE WHEN Event IN ('High Jump','Pole Vault','Long Jump','Triple Jump',
                                      'Shot Put','Discus Throw','Hammer Throw','Javelin Throw',
                                      'Decathlon','Heptathlon')
                 THEN -result_numeric ELSE result_numeric END) AS best_numeric,
-       performance AS best_performance,
-       wapoints, competitionname
+       Result AS best_performance,
+       wapoints, Competition
 FROM athletics_data
-WHERE nationality = 'KSA'
+WHERE Athlete_CountryCode = 'KSA'
   AND year = 2025
   AND result_numeric IS NOT NULL
-GROUP BY eventname, gender, athleteid, firstname, lastname
-ORDER BY eventname, gender, best_numeric ASC
+GROUP BY Event, Gender, Athlete_ID, Athlete_Name
+ORDER BY Event, Gender, best_numeric ASC
 ```
 
 **Q: KSA athletes who have achieved Tokyo 2025 World Championship entry standards**
 ```sql
 -- Example for 100m Men (standard: 10.00s)
-SELECT DISTINCT firstname || ' ' || lastname AS athlete_name,
+SELECT Athlete_Name,
        MIN(result_numeric) AS personal_best,
        MAX(wapoints) AS best_points
 FROM athletics_data
-WHERE nationality = 'KSA'
-  AND eventname = '100m'
-  AND gender = 'M'
+WHERE Athlete_CountryCode = 'KSA'
+  AND Event = '100m'
+  AND Gender = 'Men'
   AND result_numeric IS NOT NULL
   AND result_numeric <= 10.00
-  AND competitiondate >= '2024-08-01'
-GROUP BY athleteid, firstname, lastname
+  AND Start_Date >= '2024-08-01'
+GROUP BY Athlete_ID, Athlete_Name
 ORDER BY personal_best ASC
 ```
 
 **Q: All KSA results at any major championship, with medal positions highlighted**
 ```sql
-SELECT competitionname, year, eventname,
-       firstname || ' ' || lastname AS athlete_name,
-       round_normalized, CAST(position AS INTEGER) AS place,
-       performance, result_numeric, wapoints,
+SELECT Competition, year, Event,
+       Athlete_Name,
+       round_normalized, CAST(Position AS INTEGER) AS place,
+       Result, result_numeric, wapoints,
        CASE
-         WHEN round_normalized = 'Final' AND CAST(position AS INTEGER) <= 3 THEN 'MEDAL'
+         WHEN round_normalized = 'Final' AND CAST(Position AS INTEGER) <= 3 THEN 'MEDAL'
          WHEN round_normalized = 'Final' THEN 'Finalist'
          WHEN round_normalized = 'Semi Finals' THEN 'Semi-Finalist'
          ELSE 'Participated'
        END AS achievement
 FROM athletics_data
-WHERE nationality = 'KSA'
-  AND competitionid IN (
+WHERE Athlete_CountryCode = 'KSA'
+  AND Competition_ID IN (
     '13079218','12992925','12877460','12825110','12042259',
     '13112510','13046619','13002354','12935526','12898707',
     '13048549','12911586','12854365',
     '13105634','13045167','12927085'
   )
   AND result_numeric IS NOT NULL
-ORDER BY year DESC, eventname,
+ORDER BY year DESC, Event,
   CASE round_normalized
     WHEN 'Final' THEN 1
     WHEN 'Semi Finals' THEN 2
     WHEN 'Heats' THEN 3
     ELSE 4
   END,
-  CAST(position AS INTEGER) ASC
+  CAST(Position AS INTEGER) ASC
 ```
 
 **Q: Year-over-year improvement for a KSA athlete**
 ```sql
-SELECT year, eventname,
+SELECT year, Event,
        MIN(result_numeric) AS season_best,
        AVG(result_numeric) AS season_average,
        MAX(wapoints) AS best_wapoints,
        COUNT(*) AS races
 FROM athletics_data
-WHERE athleteid = '147939'
-  AND eventname = '400m'
+WHERE Athlete_ID = '147939'
+  AND Event = '400m'
   AND result_numeric IS NOT NULL
-GROUP BY year, eventname
+GROUP BY year, Event
 ORDER BY year ASC
 ```
 
