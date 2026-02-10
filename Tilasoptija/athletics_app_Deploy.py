@@ -43,6 +43,8 @@ from historical_benchmarks import (
 )
 # Athlete deduplication for data quality
 from athlete_dedup import clean_athlete_data, normalize_athlete_id
+# AI Analytics module
+from ai_analytics import render_ai_analytics
 
 # Increase the maximum number of cells allowed by Pandas Styler.
 pd.set_option("styler.render.max_elements", 1000000)
@@ -6742,7 +6744,8 @@ def main():
         "⚔️ Competitor Analysis",
         "🏃 Relay Analytics",
         "📝 Text Report",
-        "📋 Detailed Report"
+        "📋 Detailed Report",
+        "🤖 AI Analytics"
     ]
 
     # Use selectbox for tab selection (more efficient than st.tabs for heavy content)
@@ -6873,6 +6876,9 @@ def main():
 
     elif selected_tab == "📋 Detailed Report":
         show_detailed_report(df_all)
+
+    elif selected_tab == "🤖 AI Analytics":
+        render_ai_analytics(df_all)
 
 if __name__ == "__main__":
     main()
