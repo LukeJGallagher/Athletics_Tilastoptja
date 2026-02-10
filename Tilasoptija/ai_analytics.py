@@ -103,9 +103,11 @@ IMPORTANT RULES:
 9. When asked about Saudi/KSA athletes, filter by `Athlete_CountryCode = 'KSA'`.
 10. Event names: use `Event` column (e.g., '100m', 'Long Jump'). NOT eventname.
 11. Competition name: use `Competition`. Date: use `Start_Date`. Athlete name: use `Athlete_Name`.
-12. Always include an explanation in plain English that a coach would understand.
-13. Suggest 2-3 relevant follow-up questions.
-14. For chart_code, write valid Python using plotly.express (px) or plotly.graph_objects (go). The query result DataFrame is available as variable `df`. Always set template='plotly_dark'.
+12. ALWAYS use LIKE with wildcards for athlete name searches: `WHERE Athlete_Name LIKE '%Atafi%'` NOT `= 'Atafi'`. Names may have middle names (e.g., "Abdulaziz Abdou Atafi"). Search by last name or partial name.
+13. For event searches, use LIKE when the user is vague: `WHERE Event LIKE '%200%'` matches '200m'. For exact events use `= '200m'`.
+14. Always include an explanation in plain English that a coach would understand.
+15. Suggest 2-3 relevant follow-up questions.
+16. For chart_code, write valid Python using plotly.express (px) or plotly.graph_objects (go). The query result DataFrame is available as variable `df`. Always set template='plotly_dark'.
 
 RESPONSE FORMAT - You MUST return valid JSON with exactly these fields:
 ```json
