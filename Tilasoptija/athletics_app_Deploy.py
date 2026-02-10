@@ -245,9 +245,42 @@ def ensure_json_safe(df):
             df[col] = df[col].astype(str).replace("None", "")
     return df
 
+def _is_hand_timed(row):
+    """Check if a result row is hand-timed."""
+    if 'Is_Hand_Timed' in row.index:
+        val = row['Is_Hand_Timed']
+        if val in [True, 1, '1', 'Y', 'Yes', 'y', 'yes', 'TRUE', 'True', 'true', 'H', 'h']:
+            return True
+    if 'Result' in row.index:
+        result_str = str(row['Result']).strip().lower()
+        if result_str.endswith('h'):
+            return True
+    return False
+
+def mark_hand_times(df):
+    """Add (h) marker to hand-timed results for display."""
+    if 'Result' not in df.columns:
+        return df
+    df = df.copy()
+    for idx, row in df.iterrows():
+        if _is_hand_timed(row):
+            result_str = str(row['Result']).strip()
+            if not result_str.endswith('(h)'):
+                df.at[idx, 'Result'] = f"{result_str} (h)"
+    return df
+
 def style_dark_df(df):
-    return df.style.set_properties(
-        **{'background-color': '#222', 'color': 'white', 'border-color': 'gray'}
+    """Style dataframe with dark theme. Highlights hand-timed results in yellow."""
+    # Auto-mark hand times if Result column exists
+    styled_df = mark_hand_times(df) if 'Result' in df.columns else df
+
+    def highlight_hand_times(row):
+        if 'Result' in row.index and str(row.get('Result', '')).endswith('(h)'):
+            return ['background-color: #555; color: #FFB800'] * len(row)
+        return ['background-color: #222; color: white'] * len(row)
+
+    return styled_df.style.apply(highlight_hand_times, axis=1).set_properties(
+        **{'border-color': 'gray'}
     ).hide(axis='index')
 
 ###################################
@@ -1237,12 +1270,25 @@ def show_single_athlete_profile(profile, db_label):
                     best_row = last_3_years.loc[best_idx]
                     st.markdown(f"• {event_name}: **{best_row.get('Result','N/A')}**")
 
+        # === EVENT FILTER ===
+        st.markdown("---")
+        all_events = sorted(last_3_years['Event'].dropna().unique()) if 'Event' in last_3_years.columns else []
+        selected_profile_events = st.multiselect(
+            "Filter by Event(s)", all_events, default=all_events,
+            key=f"profile_events_{name}_{country}"
+        )
+        # Apply event filter to working data
+        if selected_profile_events and 'Event' in last_3_years.columns:
+            last_3_years_filtered = last_3_years[last_3_years['Event'].isin(selected_profile_events)].copy()
+        else:
+            last_3_years_filtered = last_3_years.copy()
+
         # === WA POINTS SECTION ===
         st.markdown("---")
         st.markdown("### World Athletics Points")
 
-        if 'wapoints' in last_3_years.columns:
-            wapoints_numeric = pd.to_numeric(last_3_years['wapoints'], errors='coerce')
+        if 'wapoints' in last_3_years_filtered.columns:
+            wapoints_numeric = pd.to_numeric(last_3_years_filtered['wapoints'], errors='coerce')
             valid_wapoints = wapoints_numeric.dropna()
 
             if len(valid_wapoints) > 0:
@@ -1271,10 +1317,9 @@ def show_single_athlete_profile(profile, db_label):
                     else:
                         st.metric("Trend", "N/A")
 
-                # WA Points by Event - only show events with valid WA points
-                if 'Event' in last_3_years.columns:
-                    # Filter to only rows with valid (non-zero, non-NaN) WA points
-                    wa_valid = last_3_years[last_3_years['wapoints'].notna() & (last_3_years['wapoints'] > 0)]
+                # WA Points by Event - only show selected events
+                if 'Event' in last_3_years_filtered.columns:
+                    wa_valid = last_3_years_filtered[last_3_years_filtered['wapoints'].notna() & (last_3_years_filtered['wapoints'] > 0)]
                     if not wa_valid.empty:
                         st.markdown("**WA Points by Event:**")
                         wa_by_event = wa_valid.groupby('Event').agg({
@@ -1300,8 +1345,7 @@ def show_single_athlete_profile(profile, db_label):
                             key="wa_date_end_profile"
                         )
 
-                    # Filter by date and get top 5 WA points performances
-                    wa_filtered = last_3_years.copy()
+                    wa_filtered = last_3_years_filtered.copy()
                     if 'Start_Date' in wa_filtered.columns:
                         wa_filtered['Start_Date'] = pd.to_datetime(wa_filtered['Start_Date'], errors='coerce')
                         wa_filtered = wa_filtered[
@@ -1525,10 +1569,16 @@ def show_single_athlete_profile(profile, db_label):
                                 diff = qual_std['world'] - best_result
                                 status = "QUALIFIED" if diff <= 0 else f"{abs(diff):.2f}m to go"
                             st.markdown(f"**World Champs Standard:** {status}")
-        st.markdown("### 🗕️ Current Season Results")
-        if 'Year' in grouped.columns:
+        st.markdown("### Current Season Results")
+        # Apply event filter to grouped data
+        if selected_profile_events and 'Event' in grouped.columns:
+            grouped_filtered = grouped[grouped['Event'].isin(selected_profile_events)].copy()
+        else:
+            grouped_filtered = grouped.copy()
+
+        if 'Year' in grouped_filtered.columns:
             cyr = datetime.datetime.now().year
-            cseason = grouped[grouped['Year'] == cyr].sort_values('Start_Date', ascending=False)
+            cseason = grouped_filtered[grouped_filtered['Year'] == cyr].sort_values('Start_Date', ascending=False)
             if cseason.empty:
                 st.warning("No results found for the current season.")
             else:
@@ -1545,43 +1595,46 @@ def show_single_athlete_profile(profile, db_label):
                     cseason.loc[best_mask, 'Season_Best'] = '🌟'
                 show_cols2 = ['Start_Date', 'Event', 'Result', 'Season_Best', 'Competition', 'Round', 'Position']
                 st.dataframe(style_dark_df(ensure_json_safe(cseason[[c for c in show_cols2 if c in cseason.columns]])))
-        def recent_avg(dfx, year_):
+        def recent_avg_by_event(dfx, year_):
+            """Calculate per-event averages (last 3 results per event)."""
             sub_df = dfx[dfx['Year'] == year_].sort_values('Start_Date', ascending=False)
-            avg_ = sub_df['Result_numeric'].mean()
-            # Mark season best per event (considering event type)
+            # Calculate average per event (last 3 results each)
+            avg_parts = []
             sub_df['Season_Best'] = ''
             for ev in sub_df['Event'].dropna().unique():
                 ev_mask = sub_df['Event'] == ev
+                ev_data = sub_df.loc[ev_mask].head(3)  # Last 3 per event
                 ev_type = get_event_type(ev)
+                ev_avg = ev_data['Result_numeric'].mean()
+                avg_parts.append({'Event': ev, 'Avg': ev_avg, 'Count': len(ev_data)})
+                # Mark season best
                 if ev_type == 'time':
                     best_val = sub_df.loc[ev_mask, 'Result_numeric'].min()
                 else:
                     best_val = sub_df.loc[ev_mask, 'Result_numeric'].max()
                 best_mask = ev_mask & (sub_df['Result_numeric'] == best_val)
                 sub_df.loc[best_mask, 'Season_Best'] = '🌟'
-            return sub_df, avg_
-        st.markdown("### Seasonal Averages (Last 3 Results)")
-        if 'Year' in grouped.columns:
+            return sub_df, avg_parts
+        st.markdown("### Seasonal Averages (Last 3 Results per Event)")
+        if 'Year' in grouped_filtered.columns:
             cyr = datetime.datetime.now().year
-            this_season_df, this_avg = recent_avg(grouped, cyr)
-            last_season_df, last_avg = recent_avg(grouped, cyr - 1)
+            this_season_df, this_avgs = recent_avg_by_event(grouped_filtered, cyr)
+            last_season_df, last_avgs = recent_avg_by_event(grouped_filtered, cyr - 1)
             if len(this_season_df) < 3:
-                st.info("🔄 Early season: fewer than 3 results.")
-            if not this_season_df.empty:
-                valid_cnt = this_season_df['Result_numeric'].notna().sum()
-                if valid_cnt == 0:
-                    st.warning("📬 This season has results, but none numeric for averaging.")
-                elif np.isnan(this_avg):
-                    st.markdown("**This Season Avg:** Not available (missing numeric results)")
-                else:
-                    st.markdown(f"**This Season Avg (Last 3):** {this_avg:.2f}")
+                st.info("Early season: fewer than 3 results.")
+            if this_avgs:
+                for ea in this_avgs:
+                    if not np.isnan(ea['Avg']):
+                        st.markdown(f"**This Season {ea['Event']} Avg (Last {ea['Count']}):** {ea['Avg']:.2f}")
             else:
                 st.markdown("No data for this season")
             st.dataframe(style_dark_df(ensure_json_safe(
                 this_season_df[[c for c in ['Start_Date', 'Event', 'Result', 'Season_Best', 'Competition'] if c in this_season_df.columns]]
             )))
-            if not np.isnan(last_avg):
-                st.markdown(f"**Last Season Avg (Last 3):** {last_avg:.2f}")
+            if last_avgs:
+                for ea in last_avgs:
+                    if not np.isnan(ea['Avg']):
+                        st.markdown(f"**Last Season {ea['Event']} Avg (Last {ea['Count']}):** {ea['Avg']:.2f}")
             else:
                 st.markdown("No data for last season")
             st.dataframe(style_dark_df(ensure_json_safe(
@@ -2337,11 +2390,20 @@ def get_final_performance_by_place(_df, championship_type, gender, event, age_gr
 
     # Filter for finals only
     if 'Round' in df_filtered.columns:
-        final_terms = ['final', 'f', 'a final', 'final a', '', 'none']
-        df_filtered = df_filtered[
-            df_filtered['Round'].isna() |
-            df_filtered['Round'].str.lower().str.strip().isin(final_terms)
-        ]
+        final_terms = ['final', 'f', 'a final', 'final a']
+        event_type_check = get_event_type(event)
+        if event_type_check == 'time':
+            # Track events: only include explicitly labelled finals
+            df_filtered = df_filtered[
+                df_filtered['Round'].str.lower().str.strip().isin(final_terms)
+            ]
+        else:
+            # Field/points events: include NaN rounds (often no round distinction)
+            df_filtered = df_filtered[
+                df_filtered['Round'].isna() |
+                (df_filtered['Round'].str.strip() == '') |
+                df_filtered['Round'].str.lower().str.strip().isin(final_terms)
+            ]
 
     if df_filtered.empty:
         return pd.DataFrame()
@@ -2354,6 +2416,20 @@ def get_final_performance_by_place(_df, championship_type, gender, event, age_gr
     valid_results = df_filtered['Result_numeric'].notna().sum()
     if df_filtered.empty or valid_results == 0:
         return pd.DataFrame()
+
+    # Remove outliers - results that are clearly not from the same event/round
+    # Use IQR method: exclude values beyond 1.5x IQR from Q1/Q3
+    valid_df = df_filtered[df_filtered['Result_numeric'].notna()]
+    if len(valid_df) > 4:
+        q1 = valid_df['Result_numeric'].quantile(0.25)
+        q3 = valid_df['Result_numeric'].quantile(0.75)
+        iqr = q3 - q1
+        lower_bound = q1 - 2.0 * iqr
+        upper_bound = q3 + 2.0 * iqr
+        df_filtered = df_filtered[
+            df_filtered['Result_numeric'].isna() |
+            df_filtered['Result_numeric'].between(lower_bound, upper_bound)
+        ]
 
     # Group by position (rank) and calculate stats
     event_type = get_event_type(event)
