@@ -339,38 +339,22 @@ def render_ai_analytics(df_all: pd.DataFrame):
     )
     selected_model = AVAILABLE_MODELS[model_name]
 
-    data_source = st.sidebar.radio(
-        "Data Source",
-        ["Master (96K rows - fast)", "Full (13M rows - slower)"],
-        index=0,
-        key="ai_data_source"
-    )
-    use_full = "Full" in data_source
-
     if st.sidebar.button("Clear Chat", key="ai_clear_chat"):
         st.session_state['ai_chat_history'] = []
         st.session_state['ai_messages'] = []
         st.rerun()
 
-    # Load data source
-    if use_full:
-        if 'competitor_data' in st.session_state and st.session_state['competitor_data'] is not None:
-            df_query = st.session_state['competitor_data']
-        else:
-            with st.spinner("Loading full database (13M rows)..."):
-                from blob_storage import load_full_data
-                df_query = load_full_data()
-                st.session_state['competitor_data'] = df_query
-    else:
-        df_query = df_all
+    # Use the pre-loaded master data (96K rows - major champs + KSA)
+    # Full 13M row database is too large for Streamlit Cloud memory
+    df_query = df_all
 
     # Show data info
     st.sidebar.markdown(f"**Rows:** {len(df_query):,}")
-    if 'nationality' in df_query.columns:
-        n_countries = df_query['nationality'].nunique()
+    if 'Athlete_CountryCode' in df_query.columns:
+        n_countries = df_query['Athlete_CountryCode'].nunique()
         st.sidebar.markdown(f"**Countries:** {n_countries}")
-    if 'eventname' in df_query.columns:
-        n_events = df_query['eventname'].nunique()
+    if 'Event' in df_query.columns:
+        n_events = df_query['Event'].nunique()
         st.sidebar.markdown(f"**Events:** {n_events}")
 
     # Initialize chat history
