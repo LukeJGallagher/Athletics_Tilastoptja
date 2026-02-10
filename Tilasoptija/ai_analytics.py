@@ -242,6 +242,39 @@ def execute_query(sql: str, df_source: pd.DataFrame = None) -> tuple[pd.DataFram
         return pd.DataFrame(), f"SQL Error: {str(e)}"
 
 
+def _suggest_names(query_text: str, df: pd.DataFrame, max_suggestions: int = 5) -> list[str]:
+    """Find similar athlete names when a search returns no results."""
+    if 'Athlete_Name' not in df.columns:
+        return []
+
+    # Extract potential name keywords from the user query (skip common words)
+    skip_words = {'show', 'me', 'the', 'all', 'results', 'for', 'of', 'in', 'at',
+                  'performance', 'summary', 'compare', 'how', 'what', 'who', 'is',
+                  'are', 'was', 'were', 'did', 'does', 'can', 'could', 'would',
+                  '100m', '200m', '400m', '800m', '1500m', 'metres', 'meters',
+                  'long', 'jump', 'high', 'shot', 'put', 'discus', 'javelin',
+                  'hammer', 'throw', 'hurdles', 'relay', 'marathon', 'walk',
+                  'men', 'women', 'ksa', 'saudi', 'arabia', 'best', 'fastest',
+                  'top', 'recent', 'season', 'year', '2024', '2025', '2026'}
+
+    words = [w for w in re.split(r'[\s,.\-\']+', query_text.lower()) if len(w) > 2 and w not in skip_words]
+    if not words:
+        return []
+
+    # Search for names containing any of these keywords
+    names = df['Athlete_Name'].dropna().unique()
+    matches = []
+    for name in names:
+        name_lower = name.lower()
+        for word in words:
+            if word in name_lower:
+                matches.append(name)
+                break
+
+    # Deduplicate and limit
+    return list(dict.fromkeys(matches))[:max_suggestions]
+
+
 # ============================================================
 # Chart Rendering
 # ============================================================
@@ -444,6 +477,11 @@ def _process_question(question: str, df_query: pd.DataFrame, model: str):
     if sql:
         query_result, query_error = execute_query(sql, df_query)
 
+    # If query returned no results and there's no error, suggest similar names
+    name_suggestions = []
+    if sql and query_result.empty and not query_error:
+        name_suggestions = _suggest_names(question, df_query)
+
     # Build chart
     chart_fig = None
     if not query_result.empty:
@@ -465,6 +503,7 @@ def _process_question(question: str, df_query: pd.DataFrame, model: str):
         "query_result": query_result if not query_result.empty else None,
         "query_error": query_error,
         "chart_fig": chart_fig,
+        "name_suggestions": name_suggestions,
     })
 
 
@@ -497,6 +536,12 @@ def _render_assistant_message(msg: dict):
         st.dataframe(query_result, use_container_width=True, hide_index=True)
     elif sql and not msg.get("query_error"):
         st.info("Query returned no results. Try broadening your search.")
+        # Show name suggestions if available
+        suggestions = msg.get("name_suggestions", [])
+        if suggestions:
+            suggestion_text = ", ".join(f"**{name}**" for name in suggestions)
+            st.markdown(f"Did you mean: {suggestion_text}?")
+            st.caption("Try re-asking with the full athlete name above.")
 
     # SQL (collapsible)
     if sql:
