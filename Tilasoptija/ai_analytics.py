@@ -37,7 +37,14 @@ except ImportError:
 # ============================================================
 
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
+
+# Check .env first, then Streamlit secrets (for Cloud deployment)
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+if not OPENROUTER_API_KEY:
+    try:
+        OPENROUTER_API_KEY = st.secrets.get("OPENROUTER_API_KEY", "")
+    except Exception:
+        pass
 
 # Free models available on OpenRouter
 AVAILABLE_MODELS = {
