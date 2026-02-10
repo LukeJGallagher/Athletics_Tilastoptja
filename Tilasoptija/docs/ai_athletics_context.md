@@ -1316,4 +1316,238 @@ ORDER BY year ASC
 
 ---
 
+## 10. Coaching-Specific Query Patterns
+
+These examples cover the most common coaching questions about KSA athletes preparing for major championships.
+
+### Gap-to-Standard Analysis
+
+**Q: How far are KSA 400m athletes from the World Championship standard?**
+```sql
+SELECT Athlete_Name,
+       MIN(result_numeric) AS personal_best,
+       ROUND(MIN(result_numeric) - 44.85, 2) AS gap_to_tokyo_2025,
+       ROUND(MIN(result_numeric) - 44.90, 2) AS gap_to_la_2028,
+       MAX(wapoints) AS best_wapoints,
+       COUNT(*) AS races
+FROM athletics_data
+WHERE Athlete_CountryCode = 'KSA'
+  AND Event = '400m'
+  AND Gender = 'Men'
+  AND result_numeric IS NOT NULL
+  AND year >= 2023
+GROUP BY Athlete_ID, Athlete_Name
+ORDER BY personal_best ASC
+```
+Note: For time events, negative gap = already under the standard (qualified). For field events, reverse the comparison (PB - standard; positive = already above standard).
+
+**Q: Which KSA athletes are closest to qualifying for Tokyo 2025?**
+```sql
+SELECT Athlete_Name, Event,
+       MIN(result_numeric) AS personal_best,
+       CASE
+         WHEN Event IN ('100m','200m','400m','800m','1500m','5000m','10000m',
+                        '110m Hurdles','100m Hurdles','400m Hurdles',
+                        '3000m Steeplechase','Marathon','20km Race Walk','35km Race Walk')
+         THEN 'time'
+         ELSE 'distance'
+       END AS event_type,
+       MAX(wapoints) AS best_wapoints
+FROM athletics_data
+WHERE Athlete_CountryCode = 'KSA'
+  AND result_numeric IS NOT NULL
+  AND year >= 2024
+GROUP BY Athlete_ID, Athlete_Name, Event
+ORDER BY best_wapoints DESC
+LIMIT 20
+```
+
+### Rival / Competitor Analysis
+
+**Q: Who are KSA's closest rivals in the Long Jump at Asian level?**
+```sql
+SELECT Athlete_Name, Athlete_CountryCode,
+       MAX(result_numeric) AS personal_best,
+       MAX(CASE WHEN year = 2025 THEN result_numeric END) AS season_best_2025,
+       MAX(CASE WHEN year = 2024 THEN result_numeric END) AS season_best_2024,
+       MAX(wapoints) AS best_wapoints,
+       COUNT(*) AS total_competitions
+FROM athletics_data
+WHERE Event = 'Long Jump'
+  AND Gender = 'Men'
+  AND result_numeric IS NOT NULL
+  AND year >= 2023
+  AND Athlete_CountryCode IN ('KSA','JPN','CHN','IND','QAT','BRN','IRI','KOR','TPE','THA','KAZ','UZB','PHI')
+GROUP BY Athlete_ID, Athlete_Name, Athlete_CountryCode
+ORDER BY personal_best DESC
+LIMIT 20
+```
+
+**Q: Head-to-head: KSA vs Qatar in sprint events at recent Asian Championships**
+```sql
+SELECT Event, Athlete_Name, Athlete_CountryCode,
+       Result, result_numeric, round_normalized,
+       CAST(Position AS INTEGER) AS place,
+       Competition, year
+FROM athletics_data
+WHERE Competition_ID IN ('13105634','13045167','12927085','12897142')
+  AND Athlete_CountryCode IN ('KSA', 'QAT')
+  AND Event IN ('100m', '200m', '400m')
+  AND Gender = 'Men'
+  AND result_numeric IS NOT NULL
+ORDER BY Event, year DESC, round_normalized,
+  CAST(Position AS INTEGER) ASC
+```
+
+**Q: Who beat KSA athletes at the 2023 Asian Games?**
+```sql
+SELECT a.Event, a.Athlete_Name AS ksa_athlete, a.Result AS ksa_result,
+       a.result_numeric AS ksa_numeric,
+       b.Athlete_Name AS rival, b.Athlete_CountryCode AS rival_country,
+       b.Result AS rival_result, b.result_numeric AS rival_numeric,
+       b.round_normalized, CAST(b.Position AS INTEGER) AS rival_place
+FROM athletics_data a
+JOIN athletics_data b
+  ON a.Competition_ID = b.Competition_ID
+  AND a.Event = b.Event
+  AND a.round_normalized = b.round_normalized
+  AND a.Gender = b.Gender
+WHERE a.Athlete_CountryCode = 'KSA'
+  AND b.Athlete_CountryCode != 'KSA'
+  AND a.Competition_ID = '13048549'
+  AND a.result_numeric IS NOT NULL
+  AND b.result_numeric IS NOT NULL
+  AND CAST(b.Position AS INTEGER) < CAST(a.Position AS INTEGER)
+ORDER BY a.Event, a.round_normalized, CAST(b.Position AS INTEGER)
+```
+
+### Championship Readiness
+
+**Q: Show KSA medal chances at the next Asian Games based on current form**
+```sql
+WITH ksa_bests AS (
+  SELECT Athlete_Name, Event, Gender,
+         MIN(CASE WHEN Event IN ('High Jump','Pole Vault','Long Jump','Triple Jump',
+                                  'Shot Put','Discus Throw','Hammer Throw','Javelin Throw',
+                                  'Decathlon','Heptathlon')
+              THEN -result_numeric ELSE result_numeric END) AS best_sort,
+         MIN(result_numeric) AS best_time,
+         MAX(result_numeric) AS best_distance,
+         MAX(wapoints) AS best_wapoints
+  FROM athletics_data
+  WHERE Athlete_CountryCode = 'KSA'
+    AND result_numeric IS NOT NULL
+    AND year >= 2024
+  GROUP BY Athlete_ID, Athlete_Name, Event, Gender
+),
+asian_games_medals AS (
+  SELECT Event, Gender,
+         AVG(CASE WHEN CAST(Position AS INTEGER) <= 3 THEN result_numeric END) AS avg_medal_perf,
+         MIN(CASE WHEN CAST(Position AS INTEGER) = 1 THEN result_numeric END) AS gold_perf
+  FROM athletics_data
+  WHERE Competition_ID = '13048549'
+    AND round_normalized = 'Final'
+    AND result_numeric IS NOT NULL
+  GROUP BY Event, Gender
+)
+SELECT k.Athlete_Name, k.Event, k.Gender,
+       k.best_wapoints,
+       m.avg_medal_perf AS asian_games_2023_medal_avg
+FROM ksa_bests k
+LEFT JOIN asian_games_medals m ON k.Event = m.Event AND k.Gender = m.Gender
+WHERE k.best_wapoints > 800
+ORDER BY k.best_wapoints DESC
+```
+
+**Q: KSA results across all Asian Games editions**
+```sql
+SELECT Competition, year, Event,
+       Athlete_Name, round_normalized,
+       CAST(Position AS INTEGER) AS place,
+       Result, result_numeric, wapoints,
+       CASE
+         WHEN round_normalized = 'Final' AND CAST(Position AS INTEGER) = 1 THEN 'GOLD'
+         WHEN round_normalized = 'Final' AND CAST(Position AS INTEGER) = 2 THEN 'SILVER'
+         WHEN round_normalized = 'Final' AND CAST(Position AS INTEGER) = 3 THEN 'BRONZE'
+         WHEN round_normalized = 'Final' THEN 'Finalist'
+         ELSE 'Participated'
+       END AS achievement
+FROM athletics_data
+WHERE Athlete_CountryCode = 'KSA'
+  AND Competition_ID IN ('13048549', '12911586', '12854365')
+  AND result_numeric IS NOT NULL
+ORDER BY year DESC, Event,
+  CASE round_normalized WHEN 'Final' THEN 1 WHEN 'Semi Finals' THEN 2 ELSE 3 END,
+  CAST(Position AS INTEGER)
+```
+
+### Performance Trends & Form
+
+**Q: Is Mohammed Al-Yami improving in the 100m this season?**
+```sql
+SELECT Start_Date, Competition, Result, result_numeric,
+       wapoints, Round, wind
+FROM athletics_data
+WHERE Athlete_Name LIKE '%Yami%'
+  AND Event = '100m'
+  AND result_numeric IS NOT NULL
+ORDER BY Start_Date DESC
+LIMIT 20
+```
+
+**Q: KSA athletes with improving form (multiple recent PBs)**
+```sql
+SELECT Athlete_Name, Event,
+       COUNT(CASE WHEN PB = 'PB' AND year >= 2024 THEN 1 END) AS recent_pbs,
+       COUNT(CASE WHEN SB = 'SB' AND year = 2025 THEN 1 END) AS season_bests_2025,
+       MAX(wapoints) AS peak_wapoints,
+       COUNT(*) AS total_results
+FROM athletics_data
+WHERE Athlete_CountryCode = 'KSA'
+  AND result_numeric IS NOT NULL
+  AND year >= 2023
+GROUP BY Athlete_ID, Athlete_Name, Event
+HAVING COUNT(*) >= 3
+ORDER BY recent_pbs DESC, peak_wapoints DESC
+```
+
+### Asian Regional Context
+
+**Key Asian Rivals by Event (typical countries to compare against):**
+
+| Event Group | Main Rival Countries |
+|-------------|---------------------|
+| Sprints (100m, 200m) | JPN, CHN, THA, IND, QAT |
+| 400m / 400mH | QAT, BRN, IND, JPN, SRI |
+| 800m / 1500m | BRN, IND, QAT, JPN |
+| Long Distance | BRN, JPN, CHN, IND |
+| Long Jump | JPN, CHN, IND, TPE |
+| Triple Jump | CHN, JPN, IND, KAZ |
+| High Jump | QAT, KOR, JPN, CHN, SYR |
+| Shot Put | IND, CHN, JPN, IRI |
+| Discus / Hammer | IRI, CHN, JPN, IND |
+| Javelin | IND, JPN, CHN, TPE, PAK |
+
+**Next Major Championships:**
+- **Nagoya 2026 Asian Games** - Primary target for KSA squad
+- **Tokyo 2025 World Championships** (Sep 2025) - CID: 13112510
+- **LA 2028 Olympics** - Long-term target
+
+### Coaching-Specific Standard References
+
+When a coach asks "how far is [athlete] from the standard", calculate:
+- **For time events:** `athlete_PB - standard` (negative = already qualified)
+- **For field events:** `standard - athlete_PB` (negative = already qualified)
+- **Always show gap in the original unit** (seconds for time, meters for distance)
+- **Include WA Points comparison** to give cross-event context
+- **Show trend** - is the athlete improving toward the standard?
+
+When a coach asks about "rivals" or "competitors":
+- Focus on athletes from the same continent (Asia) first
+- Show the gap between KSA athlete's PB and the rival's PB
+- Include recent form (2024-2025 results)
+- Note which competitions they've faced each other in
+
+---
+
 *Document generated for the Athletics Coaching Chatbot. Data sourced from Tilastopaja competition database, World Athletics standards, and the Team Saudi athletics analytics platform.*
