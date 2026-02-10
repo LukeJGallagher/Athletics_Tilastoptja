@@ -487,14 +487,16 @@ def _render_assistant_message(msg: dict):
     if chart_fig is not None:
         st.plotly_chart(chart_fig, use_container_width=True)
 
-    # Data table
+    # Data table - show directly (not hidden in expander)
     query_result = msg.get("query_result")
+    sql = msg.get("sql", "")
     if query_result is not None and not query_result.empty:
-        with st.expander(f"View Data ({len(query_result):,} rows)", expanded=False):
-            st.dataframe(query_result, use_container_width=True, hide_index=True)
+        st.markdown(f"**Results: {len(query_result):,} rows**")
+        st.dataframe(query_result, use_container_width=True, hide_index=True)
+    elif sql and not msg.get("query_error"):
+        st.info("Query returned no results. Try broadening your search.")
 
     # SQL (collapsible)
-    sql = msg.get("sql", "")
     if sql:
         with st.expander("View SQL Query", expanded=False):
             st.code(sql, language="sql")
