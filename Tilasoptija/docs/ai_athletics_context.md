@@ -1279,4 +1279,155 @@ When a coach asks about "rivals" or "competitors":
 
 ---
 
-*Document generated for the Athletics Coaching Chatbot. Data sourced from Tilastopaja competition database, World Athletics standards, and the Team Saudi athletics analytics platform.*
+## 11. KSA Athlete Profiles & Championship Targets (2025-2028)
+
+This section contains verified performance data for KSA's key athletes. Use this to give accurate, specific coaching answers.
+
+### Nagoya 2026 Asian Games - KSA Medal Contenders
+
+**GOLD MEDAL FAVOURITES (ranked #1 in Asia 2024-25):**
+
+| Event | Athlete | PB | 2025 SB | WA Pts | Asian Rank | Gap to AG2023 Gold |
+|-------|---------|-----|---------|--------|------------|-------------------|
+| 100m (M) | Nasser Mohamed Abdo | 9.80 | 9.80 | 1193 | #1 | +0.17 ahead of 9.97 |
+| 800m (M) | Albaraa Alqarni | 1:35.49 | 1:35.49 | 1312 | #1 | Dominant, 9s clear |
+| Shot Put (M) | Mohamed Daouda Tolo | 21.80 | 21.80 | 1228 | #1 | +1.44 ahead of 20.36 |
+
+**MEDAL CONTENDERS (ranked #2-4 in Asia 2024-25):**
+
+| Event | Athlete | PB | 2025 SB | WA Pts | Asian Rank | Gap to AG2023 Medal |
+|-------|---------|-----|---------|--------|------------|-------------------|
+| 200m (M) | Abdulaziz Abdou Atafi | 20.14 | 20.14 | 1198 | #2 | +0.46 ahead of bronze 20.60 |
+| Triple Jump (M) | Sami Bakhit | 16.98 | 16.98 | 1162 | #3 | +0.30 ahead of bronze 16.68 |
+| Pole Vault (M) | Hussain Asim Al-Hizam | 5.72 | 5.72 | 1190 | #4 | +0.07 ahead of bronze 5.65 |
+| 1500m (M) | Fahad Mohamed Al-Subaie | 3:41.73 | 3:41.73 | 1082 | #2 | In contention for medal |
+| Hammer Throw (M) | Mohammed Al-Dubaisi | 70.77 | 70.40 | 1044 | #4 | Near bronze line 70.79 |
+
+**FINALISTS / TOP 8 POTENTIAL:**
+
+| Event | Athlete | PB | WA Pts | Asian Rank | Notes |
+|-------|---------|-----|--------|------------|-------|
+| 400m (M) | Mazen Al-Yassin | 45.36 | 1155 | #5 | Won AG2023 gold (45.55) - defending |
+| 400m (M) | Ibrahim Futayni | 46.93 | 1020 | Top 10 | Improving rapidly in 2025 |
+| 100m (M) | Abdullah Abkar Mohammed | 10.13 | 1162 | Top 5 | AG2023 200m silver |
+| 10,000m (M) | Tariq Ahmed Al-Amri | 28:20.56 | 1023 | #3 | AG2023 6th place finisher |
+| 5000m (M) | Tariq Ahmed Al-Amri | 13:47.31 | 987 | #10 | AG2023 7th place finisher |
+| 3000m SC (M) | Khalid Hazazi | 8:41.17 | 934 | #8 | Improving |
+| 110m Hurdles (M) | Ali Baqer Al Jumah | 13.78 | 1062 | Top 5 | New in 2025, fast progression |
+| Javelin Throw (M) | Ali Essa Abdelghani | 73.45 | 942 | Top 8 | AG2023 7th |
+| Decathlon (M) | Beedh Ali Hassan | 7163 | 889 | #6 | Developing |
+
+### Asian Games 2023 Medal Lines (Benchmark for Nagoya 2026)
+
+**Men's Key Events:**
+
+| Event | Gold | Silver | Bronze | 8th Place | Gold Athlete | Country |
+|-------|------|--------|--------|-----------|--------------|---------|
+| 100m | 9.97 | 10.02 | 10.11 | - | - | CHN |
+| 200m | 20.60 | 20.63 | 20.74 | 21.07 | Koki Ueyama | JPN |
+| 400m | 45.55 | - | 45.65 | 46.48 | Youssef Al-Masrahi | **KSA** |
+| 800m | 1:48.05 | 1:48.43 | 1:48.51 | - | Essa Alis Kzwani | **KSA** |
+| 1500m | 3:38.94 | 3:39.74 | 3:40.55 | 3:44.71 | Ajay Kumar Saroj | IND |
+| 110mH | 13.41 | - | 13.50 | 13.89 | Shunya Takayama | JPN |
+| 400mH | 48.04 | 48.52 | 49.16 | - | Abderrahmane Samba | QAT |
+| 3000m SC | 8:19.50 | 8:23.75 | 8:26.47 | 8:54.34 | Avinash Sable | IND |
+| High Jump | 2.35 | 2.33 | 2.29 | - | Mutaz Essa Barshim | QAT |
+| Pole Vault | 5.90 | 5.65 | 5.65 | 5.15 | Ernest John Obiena | PHI |
+| Long Jump | 8.22 | 8.19 | 8.10 | 7.76 | - | CHN |
+| Triple Jump | 17.13 | 16.93 | 16.68 | 16.00 | - | CHN |
+| Shot Put | 20.36 | 20.18 | 19.97 | 18.62 | Tajinderpal Singh | IND |
+| Discus Throw | 62.04 | 61.82 | 61.19 | 54.65 | Hossein Rasouli | IRI |
+| Hammer Throw | 72.97 | 72.42 | 70.79 | 67.57 | - | CHN |
+| Javelin Throw | 88.88 | 87.54 | 82.68 | 71.41 | Neeraj Chopra | IND |
+
+### Tokyo 2025 World Championship Standards vs KSA PBs
+
+| Event | Tokyo 2025 Standard | LA 2028 Standard | Best KSA Athlete | KSA PB | Gap to Tokyo | Status |
+|-------|---------------------|------------------|------------------|--------|-------------|--------|
+| 100m (M) | 10.00 | 10.00 | Nasser Mohamed Abdo | 9.80 | -0.20 | QUALIFIED |
+| 200m (M) | 20.16 | 20.16 | Abdulaziz Abdou Atafi | 20.14 | -0.02 | QUALIFIED |
+| 400m (M) | 44.85 | 44.90 | Mazen Al-Yassin | 45.36 | +0.51 | Close |
+| 800m (M) | 1:44.50 | 1:43.50 | Albaraa Alqarni | 1:35.49 | -9.01 | QUALIFIED |
+| 1500m (M) | 3:33.00 | 3:33.00 | Fahad Al-Subaie | 3:41.73 | +8.73 | Work needed |
+| 110mH (M) | 13.27 | 13.27 | Ali Baqer Al Jumah | 13.78 | +0.51 | Developing |
+| 400mH (M) | 48.50 | 48.70 | - | - | - | No KSA entry |
+| 3000m SC (M) | 8:15.00 | 8:23.00 | Khalid Hazazi | 8:41.17 | +26.17 | Long-term |
+| Pole Vault (M) | 5.82 | 5.82 | Hussain Al-Hizam | 5.72 | +0.10 | Very close |
+| Long Jump (M) | 8.27 | 8.27 | - | 7.46 | +0.81 | Work needed |
+| Triple Jump (M) | 17.22 | 17.22 | Sami Bakhit | 16.98 | +0.24 | Close |
+| Shot Put (M) | 21.50 | 21.35 | Mohamed Daouda Tolo | 21.80 | -0.30 | QUALIFIED |
+| Hammer Throw (M) | 78.50 | 78.50 | Mohammed Al-Dubaisi | 70.77 | +7.73 | Long-term |
+| Javelin Throw (M) | 85.50 | 85.50 | Ali Abdelghani | 73.45 | +12.05 | Long-term |
+
+**KSA Athletes Currently Qualified for WC/Olympics (PB under entry standard):**
+- Nasser Mohamed Abdo - 100m (9.80 vs 10.00 standard)
+- Abdulaziz Abdou Atafi - 200m (20.14 vs 20.16 standard)
+- Albaraa Alqarni - 800m (1:35.49 vs 1:44.50 standard)
+- Mohamed Daouda Tolo - Shot Put (21.80 vs 21.50 standard)
+
+**KSA Athletes Close to Qualifying (within 5%):**
+- Hussain Al-Hizam - Pole Vault (5.72 vs 5.82, gap: 0.10m)
+- Sami Bakhit - Triple Jump (16.98 vs 17.22, gap: 0.24m)
+- Mazen Al-Yassin - 400m (45.36 vs 44.85, gap: 0.51s)
+
+### KSA Championship Medal History (Recent)
+
+**Asian Games 2023 Hangzhou - KSA Medals:**
+- GOLD: Youssef Al-Masrahi (400m, 45.55)
+- GOLD: Essa Alis Kzwani (800m, 1:48.05)
+- SILVER: Mohamed Daouda Tolo (Shot Put, 20.18)
+- SILVER: Abdullah Abkar Mohammed (200m, 20.63)
+- BRONZE: Hussain Asim Al-Hizam (Pole Vault, 5.65)
+
+**2025 Asian Athletics Championships Gumi - KSA Medals:**
+- SILVER: Abdulaziz Abdou Atafi (200m, 20.31)
+- BRONZE: Abdullah Abkar Mohammed (100m, 10.30)
+- BRONZE: Mohamed Daouda Tolo (Shot Put, 19.92)
+
+**2025 Tokyo World Championships - KSA Representatives:**
+- Abdulaziz Atafi (200m - heat, 20.66)
+- Hussain Al-Hizam (Pole Vault)
+- Mohamed Daouda Tolo (Shot Put)
+- Sami Bakhit (Triple Jump)
+- Lujain Ibrahim Alhumaid (100m Women)
+
+**2024 Paris Olympics - KSA Representative:**
+- Mohamed Daouda Tolo (Shot Put - 15th in qualification, 20.65)
+
+### Key Asian Rivals by Event (Named Athletes)
+
+| Event | Athlete | Country | 2024-25 Best | Threat Level |
+|-------|---------|---------|-------------|-------------|
+| 100m | Sani Brown Abdul Hakim | JPN | 9.96 | High |
+| 200m | Ryo Uzawa | JPN | 20.12 | High - ahead of Atafi |
+| 400m | Keisuke Nozawa | JPN | 44.44 | High |
+| 400m | Kalinga Kumarage | SRI | 44.99 | High |
+| 800m | Mohammad Aman | BRN | ~1:44 | Moderate |
+| 1500m | Ryuji Iizawa | JPN | 3:41.76 | Level with Al-Subaie |
+| Pole Vault | Ernest John Obiena | PHI | 5.90 | Very High |
+| Triple Jump | Zhu Yaming | CHN | 17.33 | High |
+| Triple Jump | Fang Yaoqing | CHN | 17.09 | High |
+| Shot Put | Mostafa Amiri | IRI | 20.32 | Moderate - Tolo ahead |
+| Hammer Throw | Wang Qi | CHN | 74.50 | High |
+| Javelin | Neeraj Chopra | IND | 88.88 | Dominant |
+| High Jump | Mutaz Essa Barshim | QAT | 2.35 | Dominant |
+
+### LA 2028 Olympic Pathway
+
+**Realistic LA 2028 qualifiers (already at standard or close):**
+1. Nasser Mohamed Abdo - 100m (QUALIFIED, 9.80)
+2. Abdulaziz Abdou Atafi - 200m (QUALIFIED, 20.14)
+3. Albaraa Alqarni - 800m (QUALIFIED, 1:35.49)
+4. Mohamed Daouda Tolo - Shot Put (QUALIFIED, 21.80 vs 21.35)
+5. Hussain Al-Hizam - Pole Vault (5.72, needs 5.82 - gap: 10cm)
+6. Sami Bakhit - Triple Jump (16.98, needs 17.22 - gap: 24cm)
+
+**Long-term development targets (2-3 year timeline):**
+- Mazen Al-Yassin / Ibrahim Futayni - 400m (need ~44.90)
+- Ali Baqer Al Jumah - 110mH (13.78, needs 13.27 - fast progression)
+- Mohammed Al-Dubaisi - Hammer Throw (70.77, needs 78.50 - long gap)
+- 4x100m Relay (39.18 in 2024, needs ~38.00 level for Olympic final)
+
+---
+
+*Document generated for the Athletics Coaching Chatbot. Data sourced from Tilastopaja competition database, World Athletics standards, and the Team Saudi athletics analytics platform. Athlete profiles last updated: February 2026.*

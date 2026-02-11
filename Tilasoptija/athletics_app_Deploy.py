@@ -6736,40 +6736,36 @@ def main():
         render_coach_view(df_all)
         return  # Exit after Coach View
 
-    # Analyst View (original tabs)
-    tab_names = [
+    # Analyst View - Tab navigation
+    (tab_ag, tab_la, tab_tokyo, tab_event, tab_profile,
+     tab_qualfinal, tab_competitor, tab_relay,
+     tab_text, tab_detail, tab_ai) = st.tabs([
         "🏟️ Road to Asian Games",
         "🏅 Road to LA 2028",
         "🌍 Road to Tokyo 2025",
         "📊 Event Analysis",
         "👤 Athlete Profiles",
-        "🎯 Qualification vs Final",
+        "🎯 Qual vs Final",
         "⚔️ Competitor Analysis",
         "🏃 Relay Analytics",
         "📝 Text Report",
         "📋 Detailed Report",
-        "🤖 AI Analytics"
-    ]
+        "🤖 AI Analytics",
+    ])
 
-    # Use selectbox for tab selection (more efficient than st.tabs for heavy content)
-    selected_tab = st.selectbox("Select Analysis Tab", tab_names, key="analyst_tab_select", label_visibility="collapsed")
-
-    st.markdown("---")
-
-    # Only render the selected tab (lazy loading - much faster than st.tabs)
-    if selected_tab == "🏟️ Road to Asian Games":
+    with tab_ag:
         show_road_to_championship(df_all, "Asian Games", "2026", "Nagoya")
 
-    elif selected_tab == "🏅 Road to LA 2028":
+    with tab_la:
         show_road_to_championship(df_all, "Olympics", "2028", "Los Angeles")
 
-    elif selected_tab == "🌍 Road to Tokyo 2025":
+    with tab_tokyo:
         show_road_to_championship(df_all, "World Championships", "2025", "Tokyo")
 
-    elif selected_tab == "📊 Event Analysis":
+    with tab_event:
         show_event_analysis(df_all)
 
-    elif selected_tab == "👤 Athlete Profiles":
+    with tab_profile:
         st.title("Athlete Profiles")
         st.header("Filters")
         filtered_df = df_all.copy()
@@ -6817,7 +6813,7 @@ def main():
 
         show_athlete_profiles(filtered_df, "Athletics")
 
-    elif selected_tab == "🎯 Qualification vs Final":
+    with tab_qualfinal:
         st.title("Qualification vs Final Analysis")
         df_qual = df_all.copy()
 
@@ -6863,10 +6859,10 @@ def main():
                 with sub_tabs[1]:
                     show_final_performances(df_qual)
 
-    elif selected_tab == "⚔️ Competitor Analysis":
+    with tab_competitor:
         show_competitor_analysis(df_all)
 
-    elif selected_tab == "🏃 Relay Analytics":
+    with tab_relay:
         st.title("Relay Event Analytics")
         df_relay = df_all.copy()
         if df_relay.empty:
@@ -6874,13 +6870,13 @@ def main():
         else:
             show_relay_charts(df_relay)
 
-    elif selected_tab == "📝 Text Report":
+    with tab_text:
         show_text_report_page(df_all)
 
-    elif selected_tab == "📋 Detailed Report":
+    with tab_detail:
         show_detailed_report(df_all)
 
-    elif selected_tab == "🤖 AI Analytics":
+    with tab_ai:
         render_ai_analytics(df_all)
 
 if __name__ == "__main__":

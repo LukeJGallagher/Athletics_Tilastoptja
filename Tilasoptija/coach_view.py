@@ -397,8 +397,7 @@ def show_competition_prep_hub(df: pd.DataFrame):
                                 'id': athlete_id,
                                 'event': event
                             }
-                            # Auto-switch to Reports tab
-                            st.session_state['coach_view_tab'] = "Athlete Reports"
+                            st.success(f"Athlete data saved. Switch to the Athlete Reports tab to view.")
                             st.rerun()
 
     # Store selected championship in session state for other tabs
@@ -1582,42 +1581,26 @@ def render_coach_view(df: pd.DataFrame):
     </div>
     """, unsafe_allow_html=True)
 
-    # Coach View navigation - using selectbox for programmatic control
-    tab_names = [
-        "Competition Prep",
-        "Athlete Reports",
-        "Competitor Watch",
-        "Export Center",
+    # Coach View navigation - tab-based
+    coach_tab_labels = [
+        "🏟️ Competition Prep",
+        "📊 Athlete Reports",
+        "⚔️ Competitor Watch",
+        "📤 Export Center",
     ]
     if AI_ANALYTICS_AVAILABLE:
-        tab_names.append("AI Analytics")
+        coach_tab_labels.append("🤖 AI Analytics")
 
-    # Check if we should auto-switch tabs (e.g., from "View" button in Competition Prep)
-    default_tab = st.session_state.get('coach_view_tab', "Competition Prep")
-    if default_tab not in tab_names:
-        default_tab = "Competition Prep"
+    coach_tabs = st.tabs(coach_tab_labels)
 
-    # Navigation selectbox in sidebar or main area
-    selected_tab = st.selectbox(
-        "Navigate to",
-        tab_names,
-        index=tab_names.index(default_tab),
-        key="coach_nav_select"
-    )
-
-    # Update session state
-    st.session_state['coach_view_tab'] = selected_tab
-
-    st.markdown("---")
-
-    # Render selected tab content
-    if selected_tab == "Competition Prep":
+    with coach_tabs[0]:
         show_competition_prep_hub(df)
-    elif selected_tab == "Athlete Reports":
+    with coach_tabs[1]:
         show_athlete_report_cards(df)
-    elif selected_tab == "Competitor Watch":
+    with coach_tabs[2]:
         show_competitor_watch(df)
-    elif selected_tab == "Export Center":
+    with coach_tabs[3]:
         show_export_center(df)
-    elif selected_tab == "AI Analytics" and AI_ANALYTICS_AVAILABLE:
-        render_ai_analytics(df)
+    if AI_ANALYTICS_AVAILABLE and len(coach_tabs) > 4:
+        with coach_tabs[4]:
+            render_ai_analytics(df)
