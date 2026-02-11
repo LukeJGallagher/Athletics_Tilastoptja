@@ -72,128 +72,22 @@ Events are classified into three types that determine sort direction and compari
 - **distance** - Higher is better (jumps, throws)
 - **points** - Higher is better (combined events like decathlon, heptathlon)
 
-#### Track Events (time - lower is better)
+#### Time Events (lower is better)
+Sprints: 50m, 55m, 60m, 100m, 150m, 200m, 300m, 400m
+Middle Distance: 500m, 600m, 800m, 1000m, 1200m, 1500m, 1600m, Mile, 2000m
+Long Distance: 3000m, 5000m, 10000m/10,000m
+Road: Marathon, Half Marathon, 5km Road, 10km Road, 15km Road, 20km Road, 25km Road, 30km Road
+Hurdles: 60m Hurdles, 100m Hurdles (W), 110m Hurdles (M), 400m Hurdles (+ all height variants)
+Steeplechase: 1500m/2000m/3000m Steeplechase
+Relays: 4x100m, 4x200m, 4x400m, 4x400m Mixed, 4x800m, 4x1500m (+ format variants like "4 x 100m")
+Race Walk: 3000m-50km Race Walk variants
 
-| Event | Category | Men's Elite Range | Women's Elite Range |
-|-------|----------|-------------------|---------------------|
-| 50m | Sprint | 5.5-6.0s | 6.0-6.5s |
-| 55m | Sprint | 6.0-6.3s | 6.5-7.0s |
-| 60m | Sprint (Indoor) | 6.40-6.60s | 6.95-7.20s |
-| 100m | Sprint | 9.70-10.20s | 10.60-11.20s |
-| 150m | Sprint | 14.8-15.5s | 16.5-17.5s |
-| 200m | Sprint | 19.50-20.40s | 21.80-22.80s |
-| 300m | Sprint | 31.5-33.0s | 35.5-37.0s |
-| 400m | Sprint | 43.50-45.50s | 48.50-51.50s |
-| 500m | Middle Distance | 59.0-62.0s | 66.0-70.0s |
-| 600m | Middle Distance | 1:14-1:18 | 1:24-1:28 |
-| 800m | Middle Distance | 1:41-1:46 | 1:55-2:02 |
-| 1000m | Middle Distance | 2:12-2:18 | 2:30-2:38 |
-| 1200m | Middle Distance | 2:52-3:00 | 3:15-3:25 |
-| 1500m | Middle Distance | 3:27-3:38 | 3:50-4:10 |
-| 1600m | Middle Distance | 3:42-3:55 | 4:05-4:25 |
-| Mile | Middle Distance | 3:45-3:55 | 4:12-4:30 |
-| 2000m | Middle Distance | 4:50-5:10 | 5:25-5:50 |
-| 3000m | Long Distance | 7:20-7:50 | 8:15-8:50 |
-| 5000m | Long Distance | 12:35-13:20 | 14:00-15:10 |
-| 10000m / 10,000m | Long Distance | 26:10-27:30 | 29:00-31:00 |
-| Marathon | Road | 2:00:35-2:08:00 | 2:11:53-2:25:00 |
-| Half Marathon | Road | 58:00-62:00 | 64:00-70:00 |
-| 5km Road | Road | 13:00-14:00 | 14:30-16:00 |
-| 10km Road | Road | 27:00-29:00 | 30:00-33:00 |
-| 15km Road | Road | 42:00-45:00 | 46:00-50:00 |
-| 20km Road | Road | 56:00-60:00 | 63:00-68:00 |
-| 25km Road | Road | 71:00-76:00 | 80:00-86:00 |
-| 30km Road | Road | 86:00-92:00 | 96:00-104:00 |
-| 10 Miles, Road | Road | 45:00-48:00 | 50:00-55:00 |
-| 100km | Ultra | 6:00:00-7:00:00 | 6:30:00-7:30:00 |
+#### Distance Events (higher is better)
+Jumps: High Jump, Pole Vault, Long Jump, Triple Jump (+ Indoor variants)
+Throws: Shot Put, Discus Throw, Hammer Throw, Javelin Throw (+ weight variants)
 
-#### Hurdles (time - lower is better)
-
-| Event | Category | Men's Elite Range | Women's Elite Range |
-|-------|----------|-------------------|---------------------|
-| 50m Hurdles | Hurdles | 6.3-6.7s | 6.7-7.2s |
-| 55m Hurdles | Hurdles | 7.0-7.4s | 7.5-8.0s |
-| 60m Hurdles | Hurdles (Indoor) | 7.30-7.60s | 7.70-8.10s |
-| 80m Hurdles | Hurdles (Youth) | - | 10.5-11.5s |
-| 100m Hurdles | Hurdles (Women) | - | 12.20-13.10s |
-| 110m Hurdles | Hurdles (Men) | 12.80-13.40s | - |
-| 200m Hurdles | Hurdles | 22.0-23.5s | 25.0-27.0s |
-| 300m Hurdles | Hurdles | 34.5-36.5s | 38.0-41.0s |
-| 400m Hurdles | Hurdles | 46.00-49.00s | 51.00-55.50s |
-
-All height-specific hurdle variants (e.g., `110m Hurdles (91.4cm)`, `100m Hurdles (76.2cm)`, `300m Hurdles (84cm)`, `400m Hurdles (84cm)`) are also classified as **time**.
-
-#### Steeplechase (time - lower is better)
-
-| Event | Men's Elite Range | Women's Elite Range |
-|-------|-------------------|---------------------|
-| 1500m Steeplechase | 3:50-4:10 | 4:20-4:50 |
-| 2000m Steeplechase | 5:15-5:40 | 5:55-6:25 |
-| 3000m Steeplechase | 7:52-8:20 | 8:44-9:30 |
-
-#### Relays (time - lower is better)
-
-| Event | Men's Elite Range | Women's Elite Range |
-|-------|-------------------|---------------------|
-| 4x100m Relay | 36.84-38.50 | 40.82-43.00 |
-| 4x200m Relay | 1:18-1:22 | 1:27-1:32 |
-| 4x400m Relay | 2:54-3:02 | 3:15-3:25 |
-| 4x400m Mixed Relay | 3:07-3:15 | - |
-| 4x800m Relay | 7:02-7:20 | 8:00-8:25 |
-| 4x1500m Relay | 14:20-15:00 | 16:30-17:30 |
-| Shuttle Hurdles Relay | varies | varies |
-| Swedish Relay | varies | varies |
-| Medley Relay | varies | varies |
-
-Alternative relay name formats also mapped: `4 x 100m`, `4x100m`, `4 x 400m`, `4x400m`, `4 x 400m Mixed relay`, `Mixed 4 x 400m`, etc.
-
-#### Race Walking (time - lower is better)
-
-| Event | Men's Elite Range | Women's Elite Range |
-|-------|-------------------|---------------------|
-| 3000m Race Walk | 10:50-11:30 | 12:00-13:00 |
-| 5000m Race Walk | 18:30-20:00 | 20:30-22:00 |
-| 10000m Race Walk | 38:00-41:00 | 42:00-46:00 |
-| 10km Race Walk | 38:00-41:00 | 42:00-46:00 |
-| 15km Race Walk | 58:00-63:00 | 64:00-70:00 |
-| 20km Race Walk | 1:16:36-1:21:00 | 1:23:49-1:30:00 |
-| 30km Race Walk | 2:03:00-2:12:00 | 2:15:00-2:25:00 |
-| 35km Race Walk | 2:21:44-2:32:00 | 2:37:44-2:50:00 |
-| 50km Race Walk | 3:35:00-3:50:00 | 4:05:00-4:25:00 |
-
-#### Field Events - Jumps (distance - higher is better)
-
-| Event | Men's Elite Range | Women's Elite Range |
-|-------|-------------------|---------------------|
-| High Jump | 2.28-2.45m | 1.94-2.09m |
-| Pole Vault | 5.75-6.24m | 4.65-5.06m |
-| Long Jump | 8.10-8.95m | 6.75-7.52m |
-| Triple Jump | 17.10-18.29m | 14.40-15.67m |
-
-Indoor variants (`High Jump Indoor`, `Pole Vault Indoor`, `Long Jump Indoor`, `Triple Jump Indoor`) also classified as **distance**.
-
-#### Field Events - Throws (distance - higher is better)
-
-| Event | Implement Weight | Men's Elite Range | Women's Elite Range |
-|-------|-----------------|-------------------|---------------------|
-| Shot Put | 7.26kg M / 4kg W | 21.50-23.56m | 18.80-22.63m |
-| Discus Throw | 2kg M / 1kg W | 66.00-74.08m | 64.00-76.80m |
-| Hammer Throw | 7.26kg M / 4kg W | 77.50-86.74m | 74.00-82.98m |
-| Javelin Throw | 800g M / 600g W | 84.00-98.48m | 63.00-72.28m |
-
-Youth/weight-specific variants (e.g., `Shot Put (3kg)`, `Discus Throw (1.5kg)`, `Javelin Throw (700g)`, `Hammer Throw (5kg)`) also classified as **distance**.
-
-#### Combined Events (points - higher is better)
-
-| Event | Men's Elite Range | Women's Elite Range |
-|-------|-------------------|---------------------|
-| Decathlon | 8400-9126 pts | - |
-| Heptathlon | - | 6400-7291 pts |
-| Pentathlon | 4300-4600 pts | 4500-5000 pts |
-| Octathlon | 5800-6400 pts | - |
-| Triathlon | varies | varies |
-
-Youth variants (`Decathlon U18`, `Decathlon U20`, `Heptathlon U18`, `Heptathlon Indoor`, `Pentathlon Indoor`) also classified as **points**.
+#### Points Events (higher is better)
+Combined: Decathlon, Heptathlon, Pentathlon, Octathlon (+ youth/indoor variants)
 
 ---
 
@@ -553,7 +447,7 @@ Full mapping of World Athletics 3-letter codes to country names.
 | SOM | Somalia |
 | CPV | Cape Verde |
 
-### Europe
+### Europe (Key Nations)
 | Code | Country |
 |------|---------|
 | GBR | Great Britain |
@@ -562,158 +456,51 @@ Full mapping of World Athletics 3-letter codes to country names.
 | ITA | Italy |
 | ESP | Spain |
 | NED | Netherlands |
-| BEL | Belgium |
-| SUI | Switzerland |
-| AUT | Austria |
-| POL | Poland |
-| CZE | Czech Republic |
-| HUN | Hungary |
-| ROU | Romania |
-| BUL | Bulgaria |
-| GRE | Greece |
-| POR | Portugal |
-| SWE | Sweden |
 | NOR | Norway |
-| DEN | Denmark |
-| FIN | Finland |
-| IRL | Ireland |
-| UKR | Ukraine |
-| RUS | Russia |
-| BLR | Belarus |
-| SRB | Serbia |
-| CRO | Croatia |
-| SLO | Slovenia |
-| SVK | Slovakia |
-| BIH | Bosnia and Herzegovina |
-| MNE | Montenegro |
-| MKD | North Macedonia |
-| ALB | Albania |
-| LTU | Lithuania |
-| LAT | Latvia |
-| EST | Estonia |
-| ISL | Iceland |
-| CYP | Cyprus |
-| MLT | Malta |
-| LUX | Luxembourg |
-| MDA | Moldova |
-| GEO | Georgia |
-| ARM | Armenia |
-| AZE | Azerbaijan |
+| SWE | Sweden |
+| POL | Poland |
 | TUR | Turkey |
-| ISR | Israel |
-| AND | Andorra |
-| SMR | San Marino |
-| MON | Monaco |
-| LIE | Liechtenstein |
 
-### Americas
+### Americas (Key Nations)
 | Code | Country |
 |------|---------|
 | USA | United States |
 | CAN | Canada |
-| MEX | Mexico |
-| BRA | Brazil |
-| ARG | Argentina |
-| COL | Colombia |
-| CHI | Chile |
-| PER | Peru |
-| VEN | Venezuela |
-| ECU | Ecuador |
-| URU | Uruguay |
-| PAR | Paraguay |
-| BOL | Bolivia |
 | JAM | Jamaica |
-| TTO | Trinidad and Tobago |
-| BAH | Bahamas |
-| BAR | Barbados |
 | CUB | Cuba |
+| BRA | Brazil |
 | DOM | Dominican Republic |
-| HAI | Haiti |
-| PUR | Puerto Rico |
-| GUA | Guatemala |
-| CRC | Costa Rica |
-| PAN | Panama |
-| HON | Honduras |
-| ESA | El Salvador |
-| NCA | Nicaragua |
-| GUY | Guyana |
-| SUR | Suriname |
-| BER | Bermuda |
-| CAY | Cayman Islands |
-| IVB | British Virgin Islands |
-| ISV | US Virgin Islands |
-| ANT | Antigua and Barbuda |
-| SKN | Saint Kitts and Nevis |
-| LCA | Saint Lucia |
-| VIN | Saint Vincent and the Grenadines |
+| BAH | Bahamas |
+| TTO | Trinidad and Tobago |
 | GRN | Grenada |
-| BLZ | Belize |
-| ARU | Aruba |
-| AHO | Netherlands Antilles |
 
-### Asia
+### Asia (KSA Rivals & Key Nations)
 | Code | Country |
 |------|---------|
 | CHN | China |
 | JPN | Japan |
 | KOR | South Korea |
-| PRK | North Korea |
 | IND | India |
 | PAK | Pakistan |
-| BAN | Bangladesh |
 | SRI | Sri Lanka |
-| NEP | Nepal |
-| AFG | Afghanistan |
 | THA | Thailand |
-| VIE | Vietnam |
-| MAS | Malaysia |
-| SGP | Singapore |
-| INA | Indonesia |
 | PHI | Philippines |
-| MYA | Myanmar |
-| CAM | Cambodia |
-| LAO | Laos |
-| BRU | Brunei |
-| TLS | Timor-Leste |
-| MGL | Mongolia |
 | TPE | Chinese Taipei |
-| HKG | Hong Kong |
-| MAC | Macau |
 | KAZ | Kazakhstan |
 | UZB | Uzbekistan |
-| TKM | Turkmenistan |
-| KGZ | Kyrgyzstan |
 | TJK | Tajikistan |
-| MDV | Maldives |
-| BHU | Bhutan |
+| MGL | Mongolia |
 
 ### Oceania
 | Code | Country |
 |------|---------|
 | AUS | Australia |
 | NZL | New Zealand |
-| FIJ | Fiji |
-| PNG | Papua New Guinea |
-| SAM | Samoa |
-| ASA | American Samoa |
-| TON | Tonga |
-| VAN | Vanuatu |
-| SOL | Solomon Islands |
-| GUM | Guam |
-| COK | Cook Islands |
-| FSM | Micronesia |
-| PLW | Palau |
-| MHL | Marshall Islands |
-| KIR | Kiribati |
-| TUV | Tuvalu |
-| NRU | Nauru |
 
 ### Special Codes
 | Code | Entity |
 |------|--------|
 | AIN | Individual Neutral Athletes |
-| ROC | Russian Olympic Committee |
-| EOR | Refugee Olympic Team |
 
 ---
 
@@ -1238,67 +1025,9 @@ ORDER BY year ASC
 
 ---
 
-## 9. World Records Reference (Current as of 2025)
+## 9. Records Reference
 
-### Men's World Records
-
-| Event | Record | Athlete | Venue, Year |
-|-------|--------|---------|-------------|
-| 100m | 9.58 | Usain Bolt | Berlin, 2009 |
-| 200m | 19.19 | Usain Bolt | Berlin, 2009 |
-| 400m | 43.03 | Wayde van Niekerk | Rio, 2016 |
-| 800m | 1:40.91 | David Rudisha | London, 2012 |
-| 1500m | 3:26.00 | Hicham El Guerrouj | Rome, 1998 |
-| 5000m | 12:35.36 | Joshua Cheptegei | Monaco, 2020 |
-| 10000m | 26:11.00 | Joshua Cheptegei | Valencia, 2020 |
-| Marathon | 2:00:35 | Kelvin Kiptum | Chicago, 2023 |
-| 110m Hurdles | 12.80 | Aries Merritt | Brussels, 2012 |
-| 400m Hurdles | 45.94 | Karsten Warholm | Tokyo, 2020 |
-| 3000m SC | 7:52.11 | Lamecha Girma | Paris, 2024 |
-| High Jump | 2.45 | Javier Sotomayor | Salamanca, 1993 |
-| Pole Vault | 6.24 | Armand Duplantis | Xiamen, 2024 |
-| Long Jump | 8.95 | Mike Powell | Tokyo, 1991 |
-| Triple Jump | 18.29 | Jonathan Edwards | Gothenburg, 1995 |
-| Shot Put | 23.56 | Ryan Crouser | Los Angeles, 2023 |
-| Discus Throw | 74.08 | Jurgen Schult | Neubrandenburg, 1986 |
-| Hammer Throw | 86.74 | Yuriy Sedykh | Stuttgart, 1986 |
-| Javelin Throw | 98.48 | Jan Zelezny | Jena, 1996 |
-| Decathlon | 9126 | Kevin Mayer | Talence, 2018 |
-| 4x100m Relay | 36.84 | Jamaica | London, 2012 |
-| 4x400m Relay | 2:54.29 | USA | London, 1993 |
-| 20km Race Walk | 1:16:36 | Kento Ikeda | 2024 |
-| 35km Race Walk | 2:21:44 | Masatora Kawano | 2023 |
-
-### Women's World Records
-
-| Event | Record | Athlete | Venue, Year |
-|-------|--------|---------|-------------|
-| 100m | 10.49 | Florence Griffith-Joyner | Indianapolis, 1988 |
-| 200m | 21.34 | Florence Griffith-Joyner | Seoul, 1988 |
-| 400m | 47.60 | Marita Koch | Canberra, 1985 |
-| 800m | 1:53.28 | Jarmila Kratochvilova | Munich, 1983 |
-| 1500m | 3:49.11 | Faith Kipyegon | Paris, 2023 |
-| 5000m | 14:00.21 | Gudaf Tsegay | Eugene, 2023 |
-| 10000m | 28:54.14 | Almaz Ayana | Rio, 2016 |
-| Marathon | 2:11:53 | Tigist Assefa | Berlin, 2023 |
-| 100m Hurdles | 12.12 | Kendra Harrison | London, 2016 |
-| 400m Hurdles | 50.68 | Sydney McLaughlin-Levrone | Eugene, 2022 |
-| 3000m SC | 8:44.32 | Beatrice Chepkoech | Monaco, 2018 |
-| High Jump | 2.09 | Stefka Kostadinova | Rome, 1987 |
-| Pole Vault | 5.06 | Yelena Isinbayeva | Zurich, 2009 |
-| Long Jump | 7.52 | Galina Chistyakova | Leningrad, 1988 |
-| Triple Jump | 15.67 | Yulimar Rojas | Tokyo, 2020 |
-| Shot Put | 22.63 | Natalya Lisovskaya | Moscow, 1987 |
-| Discus Throw | 76.80 | Gabriele Reinsch | Neubrandenburg, 1988 |
-| Hammer Throw | 82.98 | Anita Wlodarczyk | Warsaw, 2016 |
-| Javelin Throw | 72.28 | Barbora Spotakova | Stuttgart, 2008 |
-| Heptathlon | 7291 | Jackie Joyner-Kersee | Seoul, 1988 |
-| 4x100m Relay | 40.82 | USA | London, 2012 |
-| 4x400m Relay | 3:15.17 | USSR | Seoul, 1988 |
-| 20km Race Walk | 1:23:49 | Jiayu Yang | 2021 |
-| Mixed 4x400m | 3:07.45 | USA | Tokyo, 2020 |
-
-### Selected Asian Records (Men)
+### Selected Asian Records (Men) - Key for KSA Rival Context
 
 | Event | Record | Athlete | Country |
 |-------|--------|---------|---------|

@@ -56,8 +56,8 @@ AVAILABLE_MODELS = {
 
 DEFAULT_MODEL = "openrouter/free"
 
-# Max chat history to send (manage token usage)
-MAX_HISTORY = 10
+# Max chat history to send (keep low - free models have small context windows)
+MAX_HISTORY = 4
 
 # Context document path
 CONTEXT_DOC_PATH = os.path.join(os.path.dirname(__file__), "docs", "ai_athletics_context.md")
@@ -449,19 +449,19 @@ def _process_question(question: str, df_query: pd.DataFrame, model: str):
 
     messages = [{"role": "system", "content": system_prompt}]
 
-    # Add recent chat history (trimmed)
+    # Add recent chat history (very condensed to save tokens for free models)
     history = st.session_state['ai_messages'][-MAX_HISTORY:]
     for msg in history:
         if msg["role"] == "user":
             messages.append({"role": "user", "content": msg["content"]})
         elif msg["role"] == "assistant" and "explanation" in msg:
-            # Send condensed version of assistant response
+            # Send minimal summary - free models have small context windows
+            explanation = msg.get("explanation", "")
+            # Truncate long explanations to first 200 chars
+            short_explanation = explanation[:200] + "..." if len(explanation) > 200 else explanation
             messages.append({
                 "role": "assistant",
-                "content": json.dumps({
-                    "explanation": msg.get("explanation", ""),
-                    "sql": msg.get("sql", ""),
-                })
+                "content": short_explanation
             })
 
     # Call API
