@@ -76,6 +76,42 @@ def _load_context_document() -> str:
         return "Athletics database with columns: nationality, eventname, performance, competitiondate, wapoints, gender, firstname, lastname, competitionname, round, position."
 
 
+def _get_data_summary(df: pd.DataFrame) -> str:
+    """Build a compact data summary from the actual DataFrame for the AI.
+    Cached in session state to avoid recomputing on every question."""
+    # Return cached version if available
+    if 'ai_data_summary' in st.session_state:
+        return st.session_state['ai_data_summary']
+
+    if 'Athlete_CountryCode' not in df.columns:
+        return ""
+
+    parts = []
+
+    # KSA athlete names with their events (most important for name matching)
+    if 'Athlete_Name' in df.columns and 'Event' in df.columns:
+        ksa = df[df['Athlete_CountryCode'] == 'KSA']
+        if not ksa.empty:
+            athlete_events = ksa.groupby('Athlete_Name')['Event'].apply(
+                lambda x: ', '.join(sorted(x.unique())[:3])
+            )
+            lines = [f"- {name}: {evts}" for name, evts in athlete_events.items()]
+            parts.append("KSA ATHLETES (use LIKE '%LastName%' to search):\n" + "\n".join(lines[:60]))
+
+    # All unique events in the database
+    if 'Event' in df.columns:
+        events = sorted(df['Event'].dropna().unique())
+        parts.append("EVENTS IN DATABASE (use exact names in SQL):\n" + ", ".join(events))
+
+    # Top country codes by result count
+    top_countries = df['Athlete_CountryCode'].value_counts().head(40).index.tolist()
+    parts.append("TOP COUNTRY CODES: " + ", ".join(top_countries))
+
+    summary = "\n\n".join(parts)
+    st.session_state['ai_data_summary'] = summary
+    return summary
+
+
 def build_system_prompt(data_source: str = "master") -> str:
     """Build the system prompt with schema + domain knowledge."""
     context = _load_context_document()
@@ -390,6 +426,7 @@ def render_ai_analytics(df_all: pd.DataFrame):
     if st.sidebar.button("Clear Chat", key="ai_clear_chat"):
         st.session_state['ai_chat_history'] = []
         st.session_state['ai_messages'] = []
+        st.session_state.pop('ai_data_summary', None)
         st.rerun()
 
     # Use the pre-loaded master data (96K rows - major champs + KSA)
@@ -607,6 +644,14 @@ def _process_question(question: str, df_query: pd.DataFrame, model: str):
 
     messages = [{"role": "system", "content": system_prompt}]
 
+    # Inject compact data reference (real names, events, countries from the database)
+    data_summary = _get_data_summary(df_query)
+    if data_summary:
+        messages.append({
+            "role": "system",
+            "content": f"DATA REFERENCE (actual values in the database - use these exact names/events in SQL):\n{data_summary}"
+        })
+
     # Add recent chat history (very condensed to save tokens for free models)
     history = st.session_state['ai_messages'][-MAX_HISTORY:]
     for msg in history:
@@ -625,10 +670,21 @@ def _process_question(question: str, df_query: pd.DataFrame, model: str):
     # Inject critical SQL reminders into the user message to prevent rule-forgetting
     # on multi-turn conversations (free models have small context windows)
     name_words = _detect_name_words(question)
+
+    # Try to match name words to actual KSA athletes for better hints
+    name_hint = ""
+    if name_words and 'Athlete_Name' in df_query.columns:
+        ksa_df = df_query[df_query.get('Athlete_CountryCode', pd.Series()) == 'KSA'] if 'Athlete_CountryCode' in df_query.columns else df_query
+        for nw in name_words:
+            matches = ksa_df[ksa_df['Athlete_Name'].str.contains(nw, case=False, na=False)]['Athlete_Name'].unique()
+            if len(matches) > 0:
+                name_hint = f" Full name in database: '{matches[0]}'."
+                break
+
     enhanced_question = question
     if name_words:
         like_hint = " AND ".join(f"Athlete_Name LIKE '%{w}%'" for w in name_words[-2:])
-        enhanced_question += f"\n[IMPORTANT: Use LIKE wildcards for names: WHERE {like_hint}. Gender uses 'Men'/'Women'. All non-aggregated columns must be in GROUP BY.]"
+        enhanced_question += f"\n[IMPORTANT: Use LIKE wildcards for names: WHERE {like_hint}.{name_hint} Gender uses 'Men'/'Women'. All non-aggregated columns must be in GROUP BY.]"
     else:
         enhanced_question += "\n[IMPORTANT: Use LIKE for name searches. Gender uses 'Men'/'Women'. All non-aggregated columns must be in GROUP BY.]"
 
