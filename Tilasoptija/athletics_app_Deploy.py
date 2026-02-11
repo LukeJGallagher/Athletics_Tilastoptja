@@ -6736,21 +6736,27 @@ def main():
         render_coach_view(df_all)
         return  # Exit after Coach View
 
-    # Analyst View - Tab navigation
+    # Analyst View - Tab navigation (compact labels to fit all on screen)
+    st.markdown("""<style>
+    button[data-baseweb="tab"] > div[data-testid="stMarkdownContainer"] > p {
+        font-size: 0.82rem;
+    }
+    </style>""", unsafe_allow_html=True)
+
     (tab_ag, tab_la, tab_tokyo, tab_event, tab_profile,
      tab_qualfinal, tab_competitor, tab_relay,
      tab_text, tab_detail, tab_ai) = st.tabs([
-        "🏟️ Road to Asian Games",
-        "🏅 Road to LA 2028",
-        "🌍 Road to Tokyo 2025",
-        "📊 Event Analysis",
-        "👤 Athlete Profiles",
-        "🎯 Qual vs Final",
-        "⚔️ Competitor Analysis",
-        "🏃 Relay Analytics",
-        "📝 Text Report",
-        "📋 Detailed Report",
-        "🤖 AI Analytics",
+        "Asian Games",
+        "LA 2028",
+        "Tokyo 2025",
+        "Events",
+        "Athletes",
+        "Qual vs Final",
+        "Competitors",
+        "Relays",
+        "Text Report",
+        "Detailed",
+        "AI Analytics",
     ])
 
     with tab_ag:

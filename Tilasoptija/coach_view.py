@@ -1583,13 +1583,13 @@ def render_coach_view(df: pd.DataFrame):
 
     # Coach View navigation - tab-based
     coach_tab_labels = [
-        "🏟️ Competition Prep",
-        "📊 Athlete Reports",
-        "⚔️ Competitor Watch",
-        "📤 Export Center",
+        "Competition Prep",
+        "Athlete Reports",
+        "Competitor Watch",
+        "Export Center",
     ]
     if AI_ANALYTICS_AVAILABLE:
-        coach_tab_labels.append("🤖 AI Analytics")
+        coach_tab_labels.append("AI Analytics")
 
     coach_tabs = st.tabs(coach_tab_labels)
 
