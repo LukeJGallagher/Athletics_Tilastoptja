@@ -120,6 +120,7 @@ COACHING-SPECIFIC RULES:
 24. When showing KSA vs rivals, always include the athlete's country code so the coach can see who they're competing against.
 25. NEVER include SQL code or SQL examples in the "explanation" field. The explanation must be plain English only. All SQL goes in the "sql" field. Do not suggest SQL queries the user can run - the system handles that automatically.
 26. Keep explanations concise and coaching-focused. Focus on what the DATA SHOWS, not how to query it. A coach does not need to see SQL.
+27. CRITICAL SQL RULE: DuckDB requires EVERY non-aggregated column in SELECT to appear in GROUP BY. If you SELECT `year, Competition, MIN(result_numeric)`, you MUST have `GROUP BY year, Competition`. Missing a column causes a Binder Error.
 
 RESPONSE FORMAT - You MUST return valid JSON with exactly these fields:
 ```json
@@ -488,6 +489,21 @@ def _process_question(question: str, df_query: pd.DataFrame, model: str):
 
     if sql:
         query_result, query_error = execute_query(sql, df_query)
+
+        # Auto-retry on common SQL errors (ask LLM to fix its own SQL)
+        if query_error and ("Binder Error" in query_error or "not found" in query_error):
+            fix_messages = messages + [
+                {"role": "assistant", "content": json.dumps({"sql": sql})},
+                {"role": "user", "content": f"Your SQL had an error: {query_error}\nFix the SQL and return the corrected JSON response. Remember: all non-aggregated SELECT columns must be in GROUP BY."}
+            ]
+            retry_response = call_openrouter(fix_messages, model)
+            if "error" not in retry_response:
+                retry_sql = retry_response.get("sql", "")
+                if retry_sql and retry_sql != sql:
+                    sql = retry_sql
+                    query_result, query_error = execute_query(sql, df_query)
+                    if not query_error:
+                        response = retry_response  # Use the fixed response
 
     # If query returned no results and there's no error, suggest similar names
     name_suggestions = []
