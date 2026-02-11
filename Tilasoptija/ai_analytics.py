@@ -358,7 +358,7 @@ def render_chart(chart_code: str, chart_type: str, df: pd.DataFrame) -> go.Figur
 # ============================================================
 
 def render_ai_analytics(df_all: pd.DataFrame):
-    """Render the AI Analytics tab."""
+    """Render the AI Analytics tab with sub-tabs for navigation."""
 
     # Header
     st.markdown("""
@@ -393,7 +393,6 @@ def render_ai_analytics(df_all: pd.DataFrame):
         st.rerun()
 
     # Use the pre-loaded master data (96K rows - major champs + KSA)
-    # Full 13M row database is too large for Streamlit Cloud memory
     df_query = df_all
 
     # Show data info
@@ -409,11 +408,38 @@ def render_ai_analytics(df_all: pd.DataFrame):
     if 'ai_messages' not in st.session_state:
         st.session_state['ai_messages'] = []
 
+    # --- Sub-tabs for navigation ---
+    tab_chat, tab_standards, tab_rivals, tab_champs = st.tabs([
+        "💬 AI Chat",
+        "📏 Standards Gap",
+        "⚔️ Rival Watch",
+        "🏆 Championship History",
+    ])
+
+    # --- TAB 1: AI Chat (main chat interface) ---
+    with tab_chat:
+        _render_chat_tab(df_query, selected_model)
+
+    # --- TAB 2: Standards Gap ---
+    with tab_standards:
+        _render_standards_gap_tab(df_query, selected_model)
+
+    # --- TAB 3: Rival Watch ---
+    with tab_rivals:
+        _render_rival_watch_tab(df_query, selected_model)
+
+    # --- TAB 4: Championship History ---
+    with tab_champs:
+        _render_championship_history_tab(df_query, selected_model)
+
+
+def _render_chat_tab(df_query: pd.DataFrame, selected_model: str):
+    """Render the main AI chat interface."""
     # Display chat history
-    for msg in st.session_state['ai_messages']:
+    for idx, msg in enumerate(st.session_state['ai_messages']):
         with st.chat_message(msg["role"]):
             if msg["role"] == "assistant":
-                _render_assistant_message(msg)
+                _render_assistant_message(msg, idx, df_query, selected_model)
             else:
                 st.markdown(msg["content"])
 
@@ -425,7 +451,7 @@ def render_ai_analytics(df_all: pd.DataFrame):
             "Show me the top 10 KSA athletes by WA points",
             "Who are the fastest 100m runners in 2024?",
             "Compare KSA vs Japan in 400m hurdles",
-            "What events does Saudi Arabia compete in?",
+            "How far are KSA sprinters from World Championship standards?",
         ]
         for i, example in enumerate(examples):
             with example_cols[i % 2]:
@@ -437,6 +463,120 @@ def render_ai_analytics(df_all: pd.DataFrame):
     if prompt := st.chat_input("Ask about athletics data..."):
         _process_question(prompt, df_query, selected_model)
         st.rerun()
+
+
+def _render_standards_gap_tab(df_query: pd.DataFrame, selected_model: str):
+    """Pre-built view: KSA athletes vs qualification standards."""
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #005a51 0%, #007167 100%);
+         padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+        <h3 style="color: white; margin: 0;">📏 KSA Standards Gap Analysis</h3>
+        <p style="color: rgba(255,255,255,0.8); margin: 0.3rem 0 0 0; font-size: 0.9rem;">
+            How far are Saudi athletes from Tokyo 2025 WC and LA 2028 Olympic standards?
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Quick-fire buttons for common standards queries
+    queries = [
+        ("KSA PBs vs Tokyo 2025 Standards", "Show all KSA athletes' personal bests and how far they are from Tokyo 2025 World Championship entry standards. Include event, athlete name, PB, standard, and the gap."),
+        ("KSA PBs vs LA 2028 Standards", "Show all KSA athletes' personal bests and how far they are from LA 2028 Olympic entry standards. Include event, athlete name, PB, standard, and the gap."),
+        ("Closest to Qualifying", "Which KSA athletes are closest to meeting a World Championship or Olympic entry standard? Show the top 10 closest with their gap to the standard."),
+        ("Already Qualified", "Which KSA athletes have already achieved the Tokyo 2025 World Championship entry standard based on their personal bests?"),
+    ]
+    cols = st.columns(2)
+    for i, (label, query) in enumerate(queries):
+        with cols[i % 2]:
+            if st.button(label, key=f"std_{i}", use_container_width=True):
+                _process_question(query, df_query, selected_model)
+                st.rerun()
+
+    # Show last standards-related result if any
+    _show_last_relevant_result("standard|qualification|gap|entry")
+
+
+def _render_rival_watch_tab(df_query: pd.DataFrame, selected_model: str):
+    """Pre-built view: KSA vs Asian rivals by event."""
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #005a51 0%, #007167 100%);
+         padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+        <h3 style="color: white; margin: 0;">⚔️ Rival Watch</h3>
+        <p style="color: rgba(255,255,255,0.8); margin: 0.3rem 0 0 0; font-size: 0.9rem;">
+            Monitor KSA athletes vs key Asian and regional competitors
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Event selector for rival comparison
+    col1, col2 = st.columns(2)
+    with col1:
+        event_choice = st.selectbox(
+            "Select Event",
+            ["100m", "200m", "400m", "800m", "1500m", "110m Hurdles", "400m Hurdles",
+             "High Jump", "Long Jump", "Triple Jump", "Shot Put", "Discus Throw",
+             "Javelin Throw", "Hammer Throw"],
+            key="rival_event_select"
+        )
+    with col2:
+        gender_choice = st.selectbox("Gender", ["Men", "Women"], key="rival_gender_select")
+
+    queries = [
+        ("KSA vs Asian Rivals", f"Compare KSA {gender_choice.lower()}'s athletes vs top Asian rivals (JPN, CHN, IND, QAT, BRN, IRI, KOR) in {event_choice}. Show athlete name, country, best result in 2024-2025, and WA points. Order by best performance."),
+        ("Top 20 in Asia", f"Show the top 20 {gender_choice.lower()}'s athletes from Asian countries in {event_choice} based on 2024-2025 results. Include name, country, best result, and WA points. Highlight where KSA athletes rank."),
+        ("Head-to-Head at Asian Games", f"Show all {event_choice} {gender_choice.lower()}'s results from the 2023 Asian Games (Hangzhou). Include athlete name, country, result, position, and round."),
+        ("Form Trend Comparison", f"Compare the performance trend of the best KSA {event_choice} {gender_choice.lower()}'s athlete vs their closest Asian rival over the last 2 years. Show results by competition date."),
+    ]
+    cols = st.columns(2)
+    for i, (label, query) in enumerate(queries):
+        with cols[i % 2]:
+            if st.button(label, key=f"rival_{i}", use_container_width=True):
+                _process_question(query, df_query, selected_model)
+                st.rerun()
+
+    _show_last_relevant_result("rival|competitor|asian|compare|vs|head")
+
+
+def _render_championship_history_tab(df_query: pd.DataFrame, selected_model: str):
+    """Pre-built view: KSA results at major championships."""
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #005a51 0%, #007167 100%);
+         padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+        <h3 style="color: white; margin: 0;">🏆 Championship History</h3>
+        <p style="color: rgba(255,255,255,0.8); margin: 0.3rem 0 0 0; font-size: 0.9rem;">
+            KSA performance at Olympics, World Championships, and Asian Games
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    queries = [
+        ("KSA at Asian Games 2023", "Show all KSA athlete results from the 2023 Asian Games in Hangzhou. Include event, athlete name, result, position, round, and WA points. Order by event then position."),
+        ("KSA at World Championships", "Show all KSA athlete results from World Championships 2023 and 2025. Include competition, event, athlete name, result, position, and round."),
+        ("KSA Olympic History", "Show all KSA athlete results at Olympic Games. Include year, event, athlete name, result, position, and round. Order by year descending."),
+        ("KSA Best Championship Performances", "What are the best KSA performances at any major championship? Show the top 15 by WA points, including competition name, event, athlete name, result, position, and WA points."),
+        ("KSA Medal/Final Appearances", "Show all KSA athletes who reached a final or won a medal at any major championship. Include competition, event, athlete, result, and position."),
+        ("Asian Championships Results", "Show all KSA results from Asian Athletics Championships 2023 and 2025. Include event, athlete name, result, position, and round."),
+    ]
+    cols = st.columns(2)
+    for i, (label, query) in enumerate(queries):
+        with cols[i % 2]:
+            if st.button(label, key=f"champ_{i}", use_container_width=True):
+                _process_question(query, df_query, selected_model)
+                st.rerun()
+
+    _show_last_relevant_result("championship|olympic|asian games|world|medal|final")
+
+
+def _show_last_relevant_result(pattern: str):
+    """Show the most recent AI result that matches a keyword pattern."""
+    if not st.session_state.get('ai_messages'):
+        st.info("Click a button above to run a query, or ask your own question in the AI Chat tab.")
+        return
+
+    # Show the latest assistant message (results carry across tabs)
+    for msg in reversed(st.session_state['ai_messages']):
+        if msg["role"] == "assistant" and not msg.get("error"):
+            _render_assistant_message(msg)
+            break
 
 
 def _process_question(question: str, df_query: pd.DataFrame, model: str):
@@ -535,8 +675,8 @@ def _process_question(question: str, df_query: pd.DataFrame, model: str):
     })
 
 
-def _render_assistant_message(msg: dict):
-    """Render an assistant message with explanation, chart, table, and follow-ups."""
+def _render_assistant_message(msg: dict, msg_idx: int = 0, df_query: pd.DataFrame = None, selected_model: str = DEFAULT_MODEL):
+    """Render an assistant message with explanation, chart, table, and clickable follow-ups."""
     # Error state
     if msg.get("error"):
         st.error(msg.get("explanation", "An error occurred"))
@@ -576,9 +716,18 @@ def _render_assistant_message(msg: dict):
         with st.expander("View SQL Query", expanded=False):
             st.code(sql, language="sql")
 
-    # Follow-up suggestions
+    # Follow-up suggestions as clickable buttons
     follow_ups = msg.get("follow_ups", [])
-    if follow_ups:
+    if follow_ups and df_query is not None:
         st.markdown("**Follow-up questions:**")
+        fu_cols = st.columns(min(len(follow_ups[:3]), 3))
         for i, fq in enumerate(follow_ups[:3]):
+            with fu_cols[i]:
+                if st.button(fq, key=f"followup_{msg_idx}_{i}", use_container_width=True):
+                    _process_question(fq, df_query, selected_model)
+                    st.rerun()
+    elif follow_ups:
+        # Fallback if no df_query (e.g. rendered from non-chat tab)
+        st.markdown("**Follow-up questions:**")
+        for fq in follow_ups[:3]:
             st.markdown(f"- {fq}")

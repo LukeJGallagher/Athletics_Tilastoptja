@@ -46,6 +46,13 @@ try:
 except ImportError:
     REPORT_GEN_AVAILABLE = False
 
+# Import AI Analytics (with fallback if not available)
+try:
+    from ai_analytics import render_ai_analytics
+    AI_ANALYTICS_AVAILABLE = True
+except ImportError:
+    AI_ANALYTICS_AVAILABLE = False
+
 # Upcoming championships with dates (Tokyo 2025 WC has completed)
 UPCOMING_CHAMPIONSHIPS = {
     "Asian Games 2026": {
@@ -1580,8 +1587,10 @@ def render_coach_view(df: pd.DataFrame):
         "Competition Prep",
         "Athlete Reports",
         "Competitor Watch",
-        "Export Center"
+        "Export Center",
     ]
+    if AI_ANALYTICS_AVAILABLE:
+        tab_names.append("AI Analytics")
 
     # Check if we should auto-switch tabs (e.g., from "View" button in Competition Prep)
     default_tab = st.session_state.get('coach_view_tab', "Competition Prep")
@@ -1610,3 +1619,5 @@ def render_coach_view(df: pd.DataFrame):
         show_competitor_watch(df)
     elif selected_tab == "Export Center":
         show_export_center(df)
+    elif selected_tab == "AI Analytics" and AI_ANALYTICS_AVAILABLE:
+        render_ai_analytics(df)
