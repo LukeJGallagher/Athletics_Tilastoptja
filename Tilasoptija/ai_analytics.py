@@ -579,6 +579,23 @@ def _show_last_relevant_result(pattern: str):
             break
 
 
+def _detect_name_words(question: str) -> list[str]:
+    """Detect likely athlete name words in a question."""
+    skip = {'show', 'me', 'the', 'all', 'results', 'for', 'of', 'in', 'at', 'and',
+            'performance', 'summary', 'compare', 'how', 'what', 'who', 'is', 'his', 'her',
+            'are', 'was', 'were', 'did', 'does', 'can', 'could', 'would', 'chances',
+            '100m', '200m', '400m', '800m', '1500m', '5000m', '10000m', 'metres', 'meters',
+            'long', 'jump', 'high', 'shot', 'put', 'discus', 'javelin', 'hammer', 'throw',
+            'hurdles', 'relay', 'marathon', 'walk', 'steeplechase', 'triple', 'pole', 'vault',
+            'men', 'women', 'ksa', 'saudi', 'arabia', 'best', 'fastest', 'slowest',
+            'top', 'recent', 'season', 'year', 'from', 'standard', 'gap', 'rivals',
+            'medal', 'final', 'asian', 'games', 'world', 'championship', 'olympic',
+            'what', 'about', 'their', 'form', 'trend', 'improving', 'compared', 'with', 'vs'}
+    words = [w for w in re.split(r'[\s,.\-\']+', question) if len(w) > 2 and w.lower() not in skip]
+    # Capitalized words are likely names
+    return [w for w in words if w[0].isupper() or w.isupper()]
+
+
 def _process_question(question: str, df_query: pd.DataFrame, model: str):
     """Process a user question and generate AI response."""
     # Add user message
@@ -604,6 +621,20 @@ def _process_question(question: str, df_query: pd.DataFrame, model: str):
                 "role": "assistant",
                 "content": short_explanation
             })
+
+    # Inject critical SQL reminders into the user message to prevent rule-forgetting
+    # on multi-turn conversations (free models have small context windows)
+    name_words = _detect_name_words(question)
+    enhanced_question = question
+    if name_words:
+        like_hint = " AND ".join(f"Athlete_Name LIKE '%{w}%'" for w in name_words[-2:])
+        enhanced_question += f"\n[IMPORTANT: Use LIKE wildcards for names: WHERE {like_hint}. Gender uses 'Men'/'Women'. All non-aggregated columns must be in GROUP BY.]"
+    else:
+        enhanced_question += "\n[IMPORTANT: Use LIKE for name searches. Gender uses 'Men'/'Women'. All non-aggregated columns must be in GROUP BY.]"
+
+    # Replace the last user message with the enhanced version for the API only
+    if messages and messages[-1]["role"] == "user":
+        messages[-1]["content"] = enhanced_question
 
     # Call API
     response = call_openrouter(messages, model)
@@ -645,7 +676,24 @@ def _process_question(question: str, df_query: pd.DataFrame, model: str):
                     if not query_error:
                         response = retry_response  # Use the fixed response
 
-    # If query returned no results and there's no error, suggest similar names
+    # Auto-retry on empty results when names were detected (model may have used = instead of LIKE)
+    if sql and query_result.empty and not query_error and name_words:
+        # Check if the SQL used = instead of LIKE for names
+        if "= '" in sql and "Athlete_Name" in sql:
+            fix_messages = messages + [
+                {"role": "assistant", "content": json.dumps({"sql": sql})},
+                {"role": "user", "content": f"Your SQL returned no results because you used exact match (=) for athlete names. Use LIKE with wildcards instead. For example: WHERE Athlete_Name LIKE '%{name_words[-1]}%'. Fix and return corrected JSON."}
+            ]
+            retry_response = call_openrouter(fix_messages, model)
+            if "error" not in retry_response:
+                retry_sql = retry_response.get("sql", "")
+                if retry_sql and retry_sql != sql:
+                    sql = retry_sql
+                    query_result, query_error = execute_query(sql, df_query)
+                    if not query_error and not query_result.empty:
+                        response = retry_response
+
+    # If still no results, suggest similar names
     name_suggestions = []
     if sql and query_result.empty and not query_error:
         name_suggestions = _suggest_names(question, df_query)
